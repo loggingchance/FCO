@@ -2,7 +2,7 @@ export function Methodology() {
   return (
     <section className="document-page">
       <h1>Methodology</h1>
-      <p>FCO is designed as a transparent reporting layer over broad-area FIA/EVALIDator-style estimates. The beta uses normalized mock outputs while the FIADB-API parameter dictionary is verified.</p>
+      <p>FCO is designed as a transparent reporting layer over broad-area FIA/EVALIDator estimates. State-level forest area and total forest carbon can use the official FIADB-API. The interface visibly distinguishes official results, mock data, and mock fallback results.</p>
       <h2>Core rules</h2>
       <ul>
         <li>County, state, and regional current-stock questions route to FIA/EVALIDator.</li>
@@ -14,4 +14,3 @@ export function Methodology() {
     </section>
   );
 }
-

@@ -1,3 +1,4 @@
+import httpx
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, Response
@@ -6,6 +7,7 @@ from app.data.geographies import COUNTIES, ESTIMATE_TYPES, STATES
 from app.data.registry import ASSUMPTIONS, MODEL_REGISTRY
 from app.models.schemas import Assumption, EstimateRequest, EstimateResponse, ModelRegistryItem, WizardRequest, WizardRoute
 from app.services.estimates import generate_mock_estimate
+from app.services.fia_api import FiaApiError, FiaApiService
 from app.services.reports import estimate_html, estimate_pdf
 from app.services.wizard import route_question
 
@@ -44,7 +46,20 @@ def estimate_types():
 
 
 @app.post("/api/estimate", response_model=EstimateResponse)
-def estimate(request: EstimateRequest):
+async def estimate(request: EstimateRequest):
+    if request.live_data:
+        service = FiaApiService(
+            settings.fia_api_base_url,
+            default_year=settings.fia_default_evaluation_year,
+            timeout=settings.fia_timeout_seconds,
+        )
+        try:
+            return await service.estimate(request)
+        except (FiaApiError, httpx.HTTPError) as exc:
+            fallback = generate_mock_estimate(request)
+            fallback.source_mode = "mock_fallback"
+            fallback.warnings.insert(0, f"Live FIADB-API request was unavailable: {exc}")
+            return fallback
     return generate_mock_estimate(request)
 
 
@@ -74,4 +89,3 @@ def assumptions():
 def create_assumption(assumption: Assumption):
     ASSUMPTIONS.append(assumption.model_dump())
     return assumption
-

@@ -64,11 +64,14 @@ label { display: grid; gap: 6px; color: var(--muted); font-weight: 700; }
 select { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: #fff; min-height: 42px; padding: 0 10px; color: var(--ink); }
 .route-result { border-left: 4px solid var(--green); padding: 12px 14px; background: #f4f8f1; margin-top: 14px; }
 .filter-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.toggle-row { display: flex; align-items: center; gap: 9px; width: max-content; margin: 14px 0; color: var(--ink); }
+.toggle-row input { width: 18px; height: 18px; accent-color: var(--green); }
 .filter-row span { background: #eef4ea; border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; }
-.result-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.result-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .result-cards article { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
 .result-cards span, .result-cards em { display: block; color: var(--muted); }
 .result-cards strong { font-size: 2rem; color: var(--green); overflow-wrap: anywhere; }
+.result-cards .status-value { font-size: 1.35rem; }
 .chart { display: grid; gap: 10px; }
 .bar-row { display: grid; grid-template-columns: 130px minmax(80px, 1fr) 110px; align-items: center; gap: 10px; font-size: .92rem; }
 .bar-track { height: 22px; border-radius: 5px; background: #edf2ed; overflow: hidden; }

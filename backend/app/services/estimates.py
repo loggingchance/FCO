@@ -94,5 +94,6 @@ def generate_mock_estimate(request: EstimateRequest) -> EstimateResponse:
         warnings=warnings,
         method_note="FCO beta returns normalized mock estimates shaped like FIA/EVALIDator outputs. The FIADB-API adapter boundary is present, with production attribute parameters pending official verification.",
         data_source="FCO mock beta data modeled after FIA/EVALIDator response concepts",
+        source_mode="mock",
+        evaluation_year=request.evaluation_year,
     )
-

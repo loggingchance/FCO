@@ -17,6 +17,8 @@ class EstimateRequest(BaseModel):
     estimate_type: str
     filters: dict[str, str] = Field(default_factory=dict)
     grouping: str | None = None
+    evaluation_year: int | None = Field(default=None, ge=2000, le=2100)
+    live_data: bool = False
 
 
 class EstimateHeadline(BaseModel):
@@ -32,6 +34,7 @@ class EstimateRow(BaseModel):
     per_acre: float
     area_acres: float
     sampling_error_percent: float | None
+    plot_count: int | None = None
     unit: str
 
 
@@ -42,6 +45,8 @@ class EstimateResponse(BaseModel):
     warnings: list[str]
     method_note: str
     data_source: str
+    source_mode: Literal["live", "mock", "mock_fallback"] = "mock"
+    evaluation_year: int | None = None
     generated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -89,4 +94,3 @@ class Assumption(BaseModel):
     analyst: str
     confidence: Literal["low", "medium", "high"]
     notes: str = ""
-

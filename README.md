@@ -61,9 +61,11 @@ Backend options:
 ```text
 ENABLE_WORKBENCH=true
 FIA_API_BASE_URL=https://apps.fs.usda.gov/fiadb-api
+FIA_DEFAULT_EVALUATION_YEAR=2023
+FIA_TIMEOUT_SECONDS=30
 FVS_EXECUTABLE_PATH=
 ```
 
 ## Build phases represented here
 
-This build covers the initial repository, public static prototype, mock estimate API, right-tool wizard, backend shell, report shell, and Impact Workbench shell. The FIADB/EVALIDator service includes a safe translation boundary and TODO placeholders where current official parameter dictionaries must be verified before real production estimates are enabled.
+This build covers the initial repository, public explorer, right-tool wizard, backend shell, report shell, and Impact Workbench shell. State-level forest area (`snum=2`) and total forest carbon (`snum=97`) can request the official FIADB-API `fullreport` endpoint. Unsupported combinations and unavailable API requests fall back to clearly labeled mock results rather than silently presenting them as live data.

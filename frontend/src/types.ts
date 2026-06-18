@@ -31,6 +31,8 @@ export interface EstimateRequest {
   estimate_type: string;
   filters: Record<string, string>;
   grouping?: string;
+  evaluation_year?: number;
+  live_data?: boolean;
 }
 
 export interface EstimateRow {
@@ -39,6 +41,7 @@ export interface EstimateRow {
   per_acre: number;
   area_acres: number;
   sampling_error_percent: number | null;
+  plot_count?: number | null;
   unit: string;
 }
 
@@ -54,6 +57,8 @@ export interface EstimateResponse {
   warnings: string[];
   method_note: string;
   data_source: string;
+  source_mode: "live" | "mock" | "mock_fallback";
+  evaluation_year?: number | null;
   generated_at: string;
 }
 
@@ -70,4 +75,3 @@ export interface WizardRoute {
   warning: string;
   next_step: string;
 }
-

@@ -3,9 +3,9 @@ import type { EstimateResponse } from "../types";
 import { api } from "../services/api";
 
 function toCsv(result: EstimateResponse) {
-  const header = ["label", "total", "per_acre", "area_acres", "sampling_error_percent", "unit"];
+  const header = ["label", "total", "per_acre", "area_acres", "sampling_error_percent", "plot_count", "unit"];
   const lines = result.rows.map((row) =>
-    [row.label, row.total, row.per_acre, row.area_acres, row.sampling_error_percent ?? "", row.unit].join(","),
+    [row.label, row.total, row.per_acre, row.area_acres, row.sampling_error_percent ?? "", row.plot_count ?? "", row.unit].join(","),
   );
   return [header.join(","), ...lines].join("\n");
 }
@@ -39,4 +39,3 @@ export function ExportButtons({ result }: { result: EstimateResponse }) {
     </div>
   );
 }
-

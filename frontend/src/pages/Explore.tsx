@@ -15,7 +15,9 @@ export function Explore() {
   const [county, setCounty] = useState("");
   const [geoType, setGeoType] = useState<"state" | "county">("state");
   const [estimateType, setEstimateType] = useState("total_carbon");
-  const [grouping, setGrouping] = useState("county");
+  const [grouping, setGrouping] = useState("state");
+  const [evaluationYear, setEvaluationYear] = useState(2023);
+  const [liveData, setLiveData] = useState(true);
   const [advanced, setAdvanced] = useState(false);
   const [result, setResult] = useState<EstimateResponse | null>(null);
   const [error, setError] = useState("");
@@ -39,6 +41,8 @@ export function Explore() {
       geography: { type: geoType, states: [state], counties: geoType === "county" ? [county] : [] },
       estimate_type: estimateType,
       grouping,
+      evaluation_year: evaluationYear,
+      live_data: liveData,
       filters: advanced ? { ownership_group: "All ownerships", stand_size_class: "All stand sizes" } : {},
     };
     setResult(await api.estimate(payload));
@@ -87,7 +91,17 @@ export function Explore() {
               {["county", "state", "carbon_pool", "forest_type_group", "ownership_group", "stand_size_class", "age_class", "reserved_status"].map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
             </select>
           </label>
+          <label>
+            FIA evaluation year
+            <select value={evaluationYear} onChange={(e) => setEvaluationYear(Number(e.target.value))}>
+              {[2024, 2023, 2022, 2021, 2020].map((year) => <option key={year} value={year}>{year}</option>)}
+            </select>
+          </label>
         </div>
+        <label className="toggle-row">
+          <input type="checkbox" checked={liveData} onChange={(e) => setLiveData(e.target.checked)} />
+          Request official FIA/EVALIDator data
+        </label>
         <button className="link-button" onClick={() => setAdvanced(!advanced)}>{advanced ? "Hide advanced filters" : "Advanced filters"}</button>
         {advanced && (
           <div className="filter-row">
@@ -106,6 +120,7 @@ export function Explore() {
             <article><span>{result.headline.label}</span><strong>{result.headline.value.toLocaleString()}</strong><em>{result.headline.unit}</em></article>
             <article><span>Per acre</span><strong>{result.headline.per_acre.toLocaleString()}</strong><em>{result.headline.unit}/acre</em></article>
             <article><span>Sampling error</span><strong>{result.rows[0]?.sampling_error_percent ?? "N/A"}%</strong><em>mock beta flag</em></article>
+            <article><span>Data status</span><strong className="status-value">{result.source_mode === "live" ? "Official FIA" : result.source_mode === "mock_fallback" ? "Fallback" : "Mock"}</strong><em>{result.evaluation_year || "sample data"}</em></article>
           </section>
           <section className="panel"><h2>Chart</h2><EstimateChart rows={result.rows} /></section>
           <section className="panel"><h2>Map</h2><MapPanel label={geoType === "county" ? selectedCountyName : state} /></section>
@@ -113,8 +128,8 @@ export function Explore() {
             <h2>Table and exports</h2>
             <div className="warnings">{result.warnings.map((warning) => <p key={warning}><AlertTriangle size={16} /> {warning}</p>)}</div>
             <table>
-              <thead><tr><th>Label</th><th>Total</th><th>Per acre</th><th>Area acres</th><th>Sampling error</th></tr></thead>
-              <tbody>{result.rows.map((row) => <tr key={row.label}><td>{row.label}</td><td>{row.total.toLocaleString()}</td><td>{row.per_acre.toLocaleString()}</td><td>{row.area_acres.toLocaleString()}</td><td>{row.sampling_error_percent ?? "N/A"}%</td></tr>)}</tbody>
+              <thead><tr><th>Label</th><th>Total</th><th>Per acre</th><th>Area acres</th><th>Sampling error</th><th>Plots</th></tr></thead>
+              <tbody>{result.rows.map((row) => <tr key={row.label}><td>{row.label}</td><td>{row.total.toLocaleString()}</td><td>{row.per_acre.toLocaleString()}</td><td>{row.area_acres.toLocaleString()}</td><td>{row.sampling_error_percent ?? "N/A"}%</td><td>{row.plot_count ?? "N/A"}</td></tr>)}</tbody>
             </table>
             <p className="method-note">{result.method_note}</p>
             <ExportButtons result={result} />
@@ -124,4 +139,3 @@ export function Explore() {
     </div>
   );
 }
-
