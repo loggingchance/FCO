@@ -1,0 +1,17 @@
+export function Methodology() {
+  return (
+    <section className="document-page">
+      <h1>Methodology</h1>
+      <p>FCO is designed as a transparent reporting layer over broad-area FIA/EVALIDator-style estimates. The beta uses normalized mock outputs while the FIADB-API parameter dictionary is verified.</p>
+      <h2>Core rules</h2>
+      <ul>
+        <li>County, state, and regional current-stock questions route to FIA/EVALIDator.</li>
+        <li>Stand-level management scenarios route to FVS or FVS-ECON.</li>
+        <li>Employment, labor income, value added, and output route to IMPLAN or RIMS II.</li>
+        <li>Environmental benefits route to specific ecosystem-service or GIS tools.</li>
+        <li>Every export must preserve limitations, assumptions, data source notes, and warning flags.</li>
+      </ul>
+    </section>
+  );
+}
+

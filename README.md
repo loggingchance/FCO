@@ -43,6 +43,10 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+## Upload to GitHub on Windows
+
+For first-time authentication, double-click `SETUP_GITHUB_ACCESS.cmd` and finish the browser sign-in. After that, double-click `UPLOAD_TO_GITHUB.cmd` whenever you want to commit and upload the current project to `loggingchance/FCO`.
+
 ## Environment
 
 Create `frontend/.env.local` if needed:
