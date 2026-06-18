@@ -16,13 +16,13 @@ The backend follows Vercel's standard FastAPI layout. `backend/main.py` exports 
 4. Set **Root Directory** to `backend`.
 5. Leave **Framework Preset** as `Other` and deploy.
 6. Verify `https://YOUR-PROJECT.vercel.app/api/health` and `https://YOUR-PROJECT.vercel.app/docs`.
-7. After the frontend is deployed, add `CORS_ORIGINS=https://YOUR-FRONTEND.vercel.app` in the backend project's Vercel environment variables and redeploy.
+7. The public read-only API permits browser requests from any origin by default. Set `CORS_ORIGINS` only if a later deployment requires a restricted origin list.
 8. Set the frontend project's `VITE_API_BASE_URL` to the backend origin without a trailing slash.
 
 ## Required production variables
 
 ```text
-CORS_ORIGINS=https://your-frontend.vercel.app
+CORS_ORIGINS=*
 FIA_API_BASE_URL=https://apps.fs.usda.gov/fiadb-api
 FIA_DEFAULT_EVALUATION_YEAR=2023
 FIA_TIMEOUT_SECONDS=30
