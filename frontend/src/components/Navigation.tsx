@@ -24,10 +24,12 @@ export function Navigation({
   setPage: (page: Page) => void;
   enableWorkbench: boolean;
 }) {
+  const headerImageUrl = `${import.meta.env.BASE_URL}assets/fco-header.png`;
+
   return (
     <header className="site-header">
       <button className="brand-banner" onClick={() => setPage("home")} aria-label="FCO home">
-        <img src="/assets/fco-header.png" alt="FCO Forest Carbon Online - The COLE Tribute App" />
+        <img src={headerImageUrl} alt="FCO Forest Carbon Online - The COLE Tribute App" />
       </button>
       <div className="topbar">
         <button className="brand" onClick={() => setPage("home")} aria-label="FCO home">
