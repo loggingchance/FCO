@@ -39,7 +39,7 @@ npm run dev
 
 Open `http://localhost:5173`.
 
-For a Windows backend launcher, double-click `RUN_FCO_BACKEND.cmd`. Deployment instructions are in `docs/BACKEND_DEPLOYMENT.md`; the repository includes both `render.yaml` and `backend/Dockerfile`.
+For a Windows backend launcher, double-click `RUN_FCO_BACKEND.cmd`. For internet deployment, double-click `DEPLOY_BACKEND_TO_VERCEL.cmd` after uploading to GitHub. Detailed instructions are in `docs/BACKEND_DEPLOYMENT.md`.
 
 ## Upload to GitHub on Windows
 
