@@ -8,8 +8,7 @@ export type Page =
   | "about"
   | "limitations"
   | "data"
-  | "glossary"
-  | "workbench";
+  | "glossary";
 
 export interface StateOption {
   code: string;
@@ -60,18 +59,4 @@ export interface EstimateResponse {
   source_mode: "live" | "mock" | "mock_fallback";
   evaluation_year?: number | null;
   generated_at: string;
-}
-
-export interface WizardAnswers {
-  geography: string;
-  question: string;
-  timeframe: string;
-  data: string;
-  precision: string;
-}
-
-export interface WizardRoute {
-  module: string;
-  warning: string;
-  next_step: string;
 }

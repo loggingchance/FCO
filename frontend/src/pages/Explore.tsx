@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Play } from "lucide-react";
-import { DecisionWizard } from "../components/DecisionWizard";
 import { EstimateChart } from "../components/EstimateChart";
 import { ExportButtons } from "../components/ExportButtons";
 import { MapPanel } from "../components/MapPanel";
@@ -54,7 +53,6 @@ export function Explore() {
         <h1>Explore Carbon</h1>
         <p className="lede">Generate broad-area FIA-style estimates for states, counties, and regions. Results are normalized for cards, charts, tables, maps, and report exports.</p>
       </section>
-      <DecisionWizard />
       <section className="panel form-panel">
         <h2>Estimate setup</h2>
         <div className="form-grid">

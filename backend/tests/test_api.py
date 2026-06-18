@@ -28,21 +28,6 @@ def test_estimate_schema():
     assert body["warnings"]
 
 
-def test_wizard_routes_stand_to_fvs():
-    res = client.post(
-        "/api/wizard/route",
-        json={
-            "geography": "Stand or treatment unit",
-            "question": "Management scenario",
-            "timeframe": "Future management scenario",
-            "data": "Stand inventory",
-            "precision": "Project-level analysis",
-        },
-    )
-    assert res.status_code == 200
-    assert "FVS" in res.json()["module"]
-
-
 def test_live_fia_forest_area_normalization():
     async def handler(request: httpx.Request):
         assert request.url.path.endswith("/fullreport")

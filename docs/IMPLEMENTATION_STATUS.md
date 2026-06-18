@@ -3,17 +3,15 @@
 ## Built in this slice
 
 - React + Vite + TypeScript public frontend.
-- FastAPI backend with health, geography, options, estimate, report, wizard, model registry, and assumptions endpoints.
+- FastAPI backend with health, geography, estimate options, estimate, and report endpoints.
 - Public pages: Home, Explore Carbon, Compare Places, Reports, Methodology, History, About, Limitations, Data Sources, and Glossary.
-- Right-tool decision wizard with guardrail routing.
 - Normalized mock estimate response schema.
 - CSV, HTML report, and PDF report export flow.
-- Impact Workbench shell behind `VITE_ENABLE_WORKBENCH`.
-- FIADB-API service boundary with explicit TODO notes for official parameter verification.
+- FIADB-API service boundary with validated initial attribute mappings.
 - Live FIADB-API state-total adapter for forest area and total forest carbon.
 - User-selectable FIA evaluation year and visible live/fallback/mock status.
 - FIA sampling error and plot count normalization with reliability warnings.
-- Backend tests for health, estimate schema, and model routing.
+- Backend tests for health, estimate schema, FIADB normalization, and grouping guardrails.
 
 ## Live-data boundary
 
@@ -28,12 +26,10 @@
 - County and multi-state FIA/EVALIDator calls.
 - FIA grouping and advanced filter mappings.
 - Map boundaries and real GIS layers.
-- FVS/FVS-ECON runner.
-- IMPLAN/RIMS II imports.
-- Fiscal, recreation, stakeholder, and environmental benefit imports.
+- Production maps and saved report permalinks.
 
 ## Validation run
 
-- Backend tests: 5 passed, including mocked official FIADB response normalization and guardrails.
+- Backend tests cover API health, estimate schema, official-response normalization, and grouping guardrails.
 - Frontend TypeScript + production build: passed.
 - Same-session live smoke check: backend health returned OK and frontend returned HTTP 200.

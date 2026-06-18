@@ -1,4 +1,4 @@
-import type { CountyOption, EstimateRequest, EstimateResponse, StateOption, WizardAnswers, WizardRoute } from "../types";
+import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
@@ -23,7 +23,5 @@ export const api = {
   counties: (state: string) => getJson<CountyOption[]>(`/api/geographies/counties?state=${encodeURIComponent(state)}`),
   estimateTypes: () => getJson<{ id: string; label: string; unit: string }[]>("/api/options/estimate-types"),
   estimate: (payload: EstimateRequest) => postJson<EstimateResponse>("/api/estimate", payload),
-  routeWizard: (payload: WizardAnswers) => postJson<WizardRoute>("/api/wizard/route", payload),
   reportUrl: (format: "html" | "pdf") => `${API_BASE}/api/report?format=${format}`,
 };
-

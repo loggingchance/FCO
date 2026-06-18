@@ -12,13 +12,11 @@ import { Home } from "./pages/Home";
 import { Limitations } from "./pages/Limitations";
 import { Methodology } from "./pages/Methodology";
 import { Reports } from "./pages/Reports";
-import { Workbench } from "./pages/Workbench";
 import type { Page } from "./types";
 import "./styles.css";
 
 function App() {
   const [page, setPage] = useState<Page>("home");
-  const enableWorkbench = import.meta.env.VITE_ENABLE_WORKBENCH !== "false";
   const pages: Record<Page, React.ReactNode> = {
     home: <Home setPage={setPage} />,
     explore: <Explore />,
@@ -30,12 +28,11 @@ function App() {
     limitations: <Limitations />,
     data: <DataSources />,
     glossary: <Glossary />,
-    workbench: <Workbench />,
   };
 
   return (
     <>
-      <Navigation page={page} setPage={setPage} enableWorkbench={enableWorkbench} />
+      <Navigation page={page} setPage={setPage} />
       <main>{pages[page]}</main>
       <Footer />
     </>

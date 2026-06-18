@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Database, FileText, GitCompare, Home, Info, Map, ShieldAlert, Wrench } from "lucide-react";
+import { BarChart3, BookOpen, Database, FileText, GitCompare, Home, Info, Map, ShieldAlert } from "lucide-react";
 import type { Page } from "../types";
 import { navItems } from "../data/content";
 
@@ -18,18 +18,14 @@ const icons: Record<string, React.ComponentType<{ size?: number }>> = {
 export function Navigation({
   page,
   setPage,
-  enableWorkbench,
 }: {
   page: Page;
   setPage: (page: Page) => void;
-  enableWorkbench: boolean;
 }) {
-  const headerImageUrl = `${import.meta.env.BASE_URL}assets/fco-header.png`;
-
   return (
     <header className="site-header">
       <button className="brand-banner" onClick={() => setPage("home")} aria-label="FCO home">
-        <img src={headerImageUrl} alt="FCO Forest Carbon Online - The COLE Tribute App" />
+        <img src="/assets/fco-header.png" alt="FCO Forest Carbon Online - The COLE Tribute App" />
       </button>
       <div className="topbar">
         <button className="brand" onClick={() => setPage("home")} aria-label="FCO home">
@@ -49,12 +45,6 @@ export function Navigation({
               </button>
             );
           })}
-          {enableWorkbench && (
-            <button className={page === "workbench" ? "active" : ""} onClick={() => setPage("workbench")} title="Impact Workbench">
-              <Wrench size={17} />
-              <span>Workbench</span>
-            </button>
-          )}
         </nav>
       </div>
     </header>
