@@ -20,6 +20,48 @@ const fallbackEstimateTypes = [
   { id: "total_carbon", label: "Total carbon stock", unit: "metric tonnes carbon" },
 ];
 
+const sampleByState: Record<string, { area: number; carbon: number; se: number }> = {
+  WI: { area: 17_100_000, carbon: 1_280_000_000, se: 4.8 },
+  MI: { area: 20_900_000, carbon: 1_630_000_000, se: 4.2 },
+  MN: { area: 15_900_000, carbon: 1_120_000_000, se: 5.1 },
+  NY: { area: 18_600_000, carbon: 1_410_000_000, se: 4.6 },
+  VT: { area: 4_500_000, carbon: 355_000_000, se: 6.3 },
+  ME: { area: 17_600_000, carbon: 1_360_000_000, se: 4.4 },
+};
+
+function browserFallback(request: EstimateRequest): EstimateResponse {
+  const stateCode = request.geography.states[0] || "WI";
+  const sample = sampleByState[stateCode] || sampleByState.WI;
+  const stateName = fallbackStates.find((item) => item.code === stateCode)?.name || stateCode;
+  const isArea = request.estimate_type === "forest_area";
+  const value = isArea ? sample.area : sample.carbon;
+  const unit = isArea ? "acres" : "sample carbon units";
+  const perAcre = isArea ? 1 : value / sample.area;
+
+  return {
+    request,
+    headline: { label: isArea ? "Forest area" : "Total forest carbon", value, unit, per_acre: perAcre },
+    rows: [{
+      label: stateName,
+      total: value,
+      per_acre: perAcre,
+      area_acres: sample.area,
+      sampling_error_percent: sample.se,
+      plot_count: null,
+      unit,
+    }],
+    warnings: [
+      "Sample fallback result: the hosted estimate service was unavailable.",
+      "Do not cite or use this sample value as an official FIA estimate.",
+    ],
+    method_note: "Browser-side sample fallback used only to keep the beta interface testable during a hosted API outage.",
+    data_source: "FCO labeled sample data",
+    source_mode: "mock_fallback",
+    evaluation_year: request.evaluation_year || null,
+    generated_at: new Date().toISOString(),
+  };
+}
+
 export function Explore() {
   const [states, setStates] = useState<StateOption[]>([]);
   const [counties, setCounties] = useState<CountyOption[]>([]);
@@ -70,7 +112,8 @@ export function Explore() {
       setError("");
       setResult(await api.estimate(payload));
     } catch {
-      setError("The hosted data service did not return an estimate. Please retry after the deployment finishes updating.");
+      setResult(browserFallback(payload));
+      setError("The hosted estimate service was unavailable, so FCO displayed a clearly labeled sample fallback.");
     }
   }
 

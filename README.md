@@ -62,7 +62,7 @@ Backend options:
 ```text
 FIA_API_BASE_URL=https://apps.fs.usda.gov/fiadb-api
 FIA_DEFAULT_EVALUATION_YEAR=2023
-FIA_TIMEOUT_SECONDS=30
+FIA_TIMEOUT_SECONDS=4
 ```
 
 ## Build phases represented here
