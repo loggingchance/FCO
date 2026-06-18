@@ -43,6 +43,8 @@ For a Windows backend launcher, double-click `RUN_FCO_BACKEND.cmd`. For internet
 
 After the backend is live, double-click `DEPLOY_FRONTEND_TO_VERCEL.cmd`, import the same repository as a new Vercel project, and set its root directory to `frontend`.
 
+The Vercel frontend proxies `/api/*` to the deployed backend through `frontend/vercel.json`, avoiding cross-origin browser configuration.
+
 ## Upload to GitHub on Windows
 
 For first-time authentication, double-click `SETUP_GITHUB_ACCESS.cmd` and finish the browser sign-in. After that, double-click `UPLOAD_TO_GITHUB.cmd` whenever you want to commit and upload the current project to `loggingchance/FCO`.

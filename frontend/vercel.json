@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://fco-9vty1fwwi-loggingchances-projects.vercel.app/api/:path*"
+    }
+  ]
+}
+

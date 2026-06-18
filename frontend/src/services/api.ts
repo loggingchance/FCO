@@ -1,6 +1,9 @@
 import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const configuredBase = import.meta.env.VITE_API_BASE_URL?.trim();
+const API_BASE = configuredBase || (import.meta.env.DEV ? "http://localhost:8000" : "");
+
+export const apiBaseUrl = API_BASE || window.location.origin;
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`);

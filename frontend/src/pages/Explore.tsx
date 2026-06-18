@@ -6,6 +6,20 @@ import { MapPanel } from "../components/MapPanel";
 import { api } from "../services/api";
 import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
 
+const fallbackStates: StateOption[] = [
+  { code: "WI", name: "Wisconsin" },
+  { code: "MI", name: "Michigan" },
+  { code: "MN", name: "Minnesota" },
+  { code: "NY", name: "New York" },
+  { code: "VT", name: "Vermont" },
+  { code: "ME", name: "Maine" },
+];
+
+const fallbackEstimateTypes = [
+  { id: "forest_area", label: "Forest area", unit: "acres" },
+  { id: "total_carbon", label: "Total carbon stock", unit: "metric tonnes carbon" },
+];
+
 export function Explore() {
   const [states, setStates] = useState<StateOption[]>([]);
   const [counties, setCounties] = useState<CountyOption[]>([]);
@@ -22,8 +36,16 @@ export function Explore() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    api.states().then(setStates).catch(() => setError("Backend is not available yet. Start the API or use the mock build after install."));
-    api.estimateTypes().then(setEstimateTypes).catch(() => undefined);
+    api.states()
+      .then((items) => {
+        setStates(items);
+        setError("");
+      })
+      .catch(() => {
+        setStates(fallbackStates);
+        setError("The hosted data service could not be reached. Selectors are available, but results may use fallback data.");
+      });
+    api.estimateTypes().then(setEstimateTypes).catch(() => setEstimateTypes(fallbackEstimateTypes));
   }, []);
 
   useEffect(() => {
@@ -44,7 +66,12 @@ export function Explore() {
       live_data: liveData,
       filters: advanced ? { ownership_group: "All ownerships", stand_size_class: "All stand sizes" } : {},
     };
-    setResult(await api.estimate(payload));
+    try {
+      setError("");
+      setResult(await api.estimate(payload));
+    } catch {
+      setError("The hosted data service did not return an estimate. Please retry after the deployment finishes updating.");
+    }
   }
 
   return (
