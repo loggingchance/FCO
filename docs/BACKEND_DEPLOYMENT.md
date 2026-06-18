@@ -17,7 +17,7 @@ The backend follows Vercel's standard FastAPI layout. `backend/main.py` exports 
 5. Leave **Framework Preset** as `Other` and deploy.
 6. Verify `https://YOUR-PROJECT.vercel.app/api/health` and `https://YOUR-PROJECT.vercel.app/docs`.
 7. The public read-only API permits browser requests from any origin by default. Set `CORS_ORIGINS` only if a later deployment requires a restricted origin list.
-8. The deployed frontend uses `frontend/vercel.json` to proxy same-origin `/api/*` requests to the backend. Local development continues to use `http://localhost:8000`.
+8. The deployed frontend uses `frontend/vercel.json` to proxy same-origin `/api/*` requests to the backend's stable production alias. Do not use a hash-specific Vercel deployment URL for this proxy. Local development continues to use `http://localhost:8000`.
 
 ## Required production variables
 
