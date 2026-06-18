@@ -39,6 +39,8 @@ npm run dev
 
 Open `http://localhost:5173`.
 
+For a Windows backend launcher, double-click `RUN_FCO_BACKEND.cmd`. Deployment instructions are in `docs/BACKEND_DEPLOYMENT.md`; the repository includes both `render.yaml` and `backend/Dockerfile`.
+
 ## Upload to GitHub on Windows
 
 For first-time authentication, double-click `SETUP_GITHUB_ACCESS.cmd` and finish the browser sign-in. After that, double-click `UPLOAD_TO_GITHUB.cmd` whenever you want to commit and upload the current project to `loggingchance/FCO`.
