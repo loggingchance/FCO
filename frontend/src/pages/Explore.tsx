@@ -162,7 +162,10 @@ export function Explore() {
           <input type="checkbox" checked={liveData} onChange={(e) => setLiveData(e.target.checked)} />
           Request official FIA/EVALIDator data
         </label>
-        <button className="link-button" onClick={() => setAdvanced(!advanced)}>{advanced ? "Hide advanced filters" : "Advanced filters"}</button>
+        <div className="form-actions">
+          <button className="link-button" onClick={() => setAdvanced(!advanced)}>{advanced ? "Hide advanced filters" : "Advanced filters"}</button>
+          <button className="primary" onClick={generate}><Play size={17} /> Generate Results</button>
+        </div>
         {advanced && (
           <div className="filter-row">
             <span>Forest type group: All</span>
@@ -171,7 +174,6 @@ export function Explore() {
             <span>Reserved status: All</span>
           </div>
         )}
-        <button className="primary" onClick={generate}><Play size={17} /> Generate Results</button>
       </section>
       {result && (
         <>
@@ -192,7 +194,6 @@ export function Explore() {
             </table>
             <p className="method-note">{result.method_note}</p>
             <ExportButtons result={result} />
-            <p className="report-support">Enjoying FCO? <a href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer">Buy me a coffee</a>.</p>
           </section>
         </>
       )}

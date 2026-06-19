@@ -64,6 +64,9 @@ h1, h2, h3 { color: var(--ink); }
 label { display: grid; gap: 6px; color: var(--muted); font-weight: 700; }
 select { width: 100%; border: 1px solid var(--line); border-radius: 7px; background: #fff; min-height: 42px; padding: 0 10px; color: var(--ink); }
 .filter-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 18px; }
+.form-actions .link-button { flex: 0 0 auto; }
+.form-actions .primary { flex: 0 0 auto; }
 .toggle-row { display: flex; align-items: center; gap: 9px; width: max-content; margin: 14px 0; color: var(--ink); }
 .toggle-row input { width: 18px; height: 18px; accent-color: var(--green); }
 .filter-row span { background: #eef4ea; border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; }
@@ -108,8 +111,6 @@ dt { font-weight: 800; color: var(--green); }
 dd { margin: 5px 0 18px; color: var(--muted); }
 .footer { max-width: 1220px; margin: 16px auto 0; padding: 18px 24px 36px; color: var(--muted); font-size: .9rem; }
 .footer-support { display: inline-flex; align-items: center; gap: 5px; color: var(--green); font-weight: 700; }
-.report-support { color: var(--muted); font-size: .9rem; }
-.report-support a { color: var(--green); font-weight: 700; }
 @media (max-width: 900px) {
   .brand-banner img { aspect-ratio: 3 / 1; object-position: 16% top; }
   .topbar { align-items: flex-start; flex-direction: column; }

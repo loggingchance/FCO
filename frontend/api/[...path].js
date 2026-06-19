@@ -32,6 +32,8 @@ const DEFINITIONS = {
   total_carbon: { snum: 97, label: "Total forest carbon", unit: "metric tonnes carbon" },
 };
 
+export const config = { maxDuration: 30 };
+
 function routePath(request) {
   const value = request.query?.path;
   return (Array.isArray(value) ? value : [value]).filter(Boolean).join("/");
@@ -45,23 +47,21 @@ function numberValue(record, key) {
 
 async function fiaRecord(state, year, definition) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  const body = new URLSearchParams({
+  const timeout = setTimeout(() => controller.abort(), 12000);
+  const parameters = new URLSearchParams({
     snum: String(definition.snum),
     wc: `${STATE_FIPS[state]}${year}`,
-    rselected: "Total",
-    cselected: "Total",
+    rselected: "None",
+    cselected: "None",
     outputFormat: "NJSON",
   });
 
   try {
-    const response = await fetch("https://apps.fs.usda.gov/fiadb-api/fullreport", {
-      method: "POST",
+    const response = await fetch(`https://apps.fs.usda.gov/fiadb-api/fullreport?${parameters}`, {
+      method: "GET",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
         "User-Agent": "FCO/0.1 FIADB validation client",
       },
-      body,
       signal: controller.signal,
     });
     if (!response.ok) throw new Error(`FIADB returned HTTP ${response.status}`);
@@ -85,7 +85,10 @@ async function officialEstimate(request) {
   if (request?.grouping && request.grouping !== "state") throw new Error("Live estimates currently support state totals");
   if (request?.filters && Object.keys(request.filters).length) throw new Error("Live advanced filters are not enabled");
 
-  const record = await fiaRecord(state, year, definition);
+  const [record, areaRecord] = await Promise.all([
+    fiaRecord(state, year, definition),
+    request.estimate_type === "forest_area" ? Promise.resolve(null) : fiaRecord(state, year, DEFINITIONS.forest_area),
+  ]);
   const value = numberValue(record, "ESTIMATE");
   const samplingError = numberValue(record, "SE_PERCENT");
   const plotCount = Math.round(numberValue(record, "PLOT_COUNT"));
@@ -94,7 +97,6 @@ async function officialEstimate(request) {
   let area = value;
   let perAcre = 1;
   if (request.estimate_type !== "forest_area") {
-    const areaRecord = await fiaRecord(state, year, DEFINITIONS.forest_area);
     area = numberValue(areaRecord, "ESTIMATE");
     if (!Number.isFinite(area) || area <= 0) throw new Error("FIADB returned an invalid forest area");
     perAcre = value / area;
