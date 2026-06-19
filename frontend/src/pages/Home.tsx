@@ -1,4 +1,4 @@
-import { ArrowRight, FileText, History, Search } from "lucide-react";
+import { ArrowRight, Coffee, FileText, History, Search } from "lucide-react";
 import type { Page } from "../types";
 
 export function Home({ setPage }: { setPage: (page: Page) => void }) {
@@ -16,6 +16,9 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
           <button onClick={() => setPage("methodology")}><Search size={17} /> Learn the Method</button>
         </div>
         <p className="scale-warning">FCO is best used for county, state, and regional estimates. It is not a parcel-level or stand-level carbon calculator.</p>
+        <a className="home-support" href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer">
+          <Coffee size={15} aria-hidden="true" /> Enjoying FCO? Buy me a coffee
+        </a>
       </div>
       <div className="home-dashboard" aria-label="FCO dashboard preview">
         <div className="metric"><span>Total carbon</span><strong>1.28B</strong><em>tons CO2e</em></div>
@@ -38,4 +41,3 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
     </section>
   );
 }
-

@@ -63,7 +63,7 @@ export function About() {
             <p>If this app has been useful, consider buying me a coffee through Venmo.</p>
           </div>
           <a className="support-link" href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer">
-            Venmo @Steven-Bick-1 <ExternalLink size={14} aria-hidden="true" />
+            Buy me a coffee <ExternalLink size={14} aria-hidden="true" />
           </a>
         </aside>
       </div>

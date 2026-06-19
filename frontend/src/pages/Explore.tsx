@@ -192,6 +192,7 @@ export function Explore() {
             </table>
             <p className="method-note">{result.method_note}</p>
             <ExportButtons result={result} />
+            <p className="report-support">Enjoying FCO? <a href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer">Buy me a coffee</a>.</p>
           </section>
         </>
       )}

@@ -54,6 +54,7 @@ th,td{padding:9px;text-align:left;border-bottom:1px solid #d9e0d7}.warning{color
 <table><thead><tr><th>Place</th><th>Total (${escapeHtml(result.headline.unit)})</th><th>Per acre (${escapeHtml(result.headline.unit)}/acre)</th><th>Area (acres)</th><th>Sampling error (%)</th></tr></thead><tbody>${rows}</tbody></table>
 <h2>Method and data source</h2><p>${escapeHtml(result.method_note)}</p><p>${escapeHtml(result.data_source)}</p>
 <h2>Important notes</h2><ul class="warning">${warnings}</ul>
+<p>Enjoying FCO? <a href="https://venmo.com/u/Steven-Bick-1">Buy me a coffee</a>.</p>
 </body></html>`;
 }
 
