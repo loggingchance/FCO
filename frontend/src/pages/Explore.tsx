@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Play } from "lucide-react";
+import { AlertTriangle, ChevronDown, Play } from "lucide-react";
 import { EstimateChart } from "../components/EstimateChart";
 import { ExportButtons } from "../components/ExportButtons";
 import { MapPanel } from "../components/MapPanel";
@@ -158,12 +158,17 @@ export function Explore() {
             </select>
           </label>
         </div>
-        <label className="toggle-row">
-          <input type="checkbox" checked={liveData} onChange={(e) => setLiveData(e.target.checked)} />
-          Request official FIA/EVALIDator data
-        </label>
+        <div className="official-data-option">
+          <label className="toggle-row">
+            <input type="checkbox" checked={liveData} onChange={(e) => setLiveData(e.target.checked)} />
+            Request official FIA/EVALIDator data
+          </label>
+          <p>Uses the USDA Forest Service FIA service when the selected geography, estimate, grouping, and year are supported.</p>
+        </div>
         <div className="form-actions">
-          <button className="link-button" onClick={() => setAdvanced(!advanced)}>{advanced ? "Hide advanced filters" : "Advanced filters"}</button>
+          <button className="link-button advanced-toggle" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>
+            {advanced ? "Hide advanced filters" : "Advanced filters"}<ChevronDown size={16} className={advanced ? "open" : ""} />
+          </button>
           <button className="primary" onClick={generate}><Play size={17} /> Generate Results</button>
         </div>
         {advanced && (
