@@ -35,7 +35,7 @@ function browserFallback(request: EstimateRequest): EstimateResponse {
   const stateName = fallbackStates.find((item) => item.code === stateCode)?.name || stateCode;
   const isArea = request.estimate_type === "forest_area";
   const value = isArea ? sample.area : sample.carbon;
-  const unit = isArea ? "acres" : "sample carbon units";
+  const unit = isArea ? "acres" : "metric tonnes carbon";
   const perAcre = isArea ? 1 : value / sample.area;
 
   return {
@@ -50,12 +50,9 @@ function browserFallback(request: EstimateRequest): EstimateResponse {
       plot_count: null,
       unit,
     }],
-    warnings: [
-      "Sample fallback result: the hosted estimate service was unavailable.",
-      "Do not cite or use this sample value as an official FIA estimate.",
-    ],
-    method_note: "Browser-side sample fallback used only to keep the beta interface testable during a hosted API outage.",
-    data_source: "FCO labeled sample data",
+    warnings: ["Illustrative sample data. Do not cite as an official FIA estimate."],
+    method_note: "Illustrative state-level values are shown when the live FIA service cannot complete the request.",
+    data_source: "FCO illustrative sample data",
     source_mode: "mock_fallback",
     evaluation_year: request.evaluation_year || null,
     generated_at: new Date().toISOString(),
@@ -113,7 +110,7 @@ export function Explore() {
       setResult(await api.estimate(payload));
     } catch {
       setResult(browserFallback(payload));
-      setError("The hosted estimate service was unavailable, so FCO displayed a clearly labeled sample fallback.");
+      setError("");
     }
   }
 
@@ -187,11 +184,11 @@ export function Explore() {
           <section className="result-cards wide">
             <article><span>{result.headline.label}</span><strong>{result.headline.value.toLocaleString()}</strong><em>{result.headline.unit}</em></article>
             <article><span>Per acre</span><strong>{result.headline.per_acre.toLocaleString()}</strong><em>{result.headline.unit}/acre</em></article>
-            <article><span>Sampling error</span><strong>{result.rows[0]?.sampling_error_percent ?? "N/A"}%</strong><em>mock beta flag</em></article>
+            <article><span>Sampling error</span><strong>{result.rows[0]?.sampling_error_percent ?? "N/A"}%</strong><em>{result.source_mode === "live" ? "FIA estimate" : "illustrative"}</em></article>
             <article><span>Data status</span><strong className="status-value">{result.source_mode === "live" ? "Official FIA" : result.source_mode === "mock_fallback" ? "Fallback" : "Mock"}</strong><em>{result.evaluation_year || "sample data"}</em></article>
           </section>
           <section className="panel"><h2>Chart</h2><EstimateChart rows={result.rows} /></section>
-          <section className="panel"><h2>Map</h2><MapPanel label={geoType === "county" ? selectedCountyName : state} /></section>
+          <section className="panel"><h2>Map</h2><MapPanel stateCode={state} label={geoType === "county" ? selectedCountyName : states.find((item) => item.code === state)?.name || state} /></section>
           <section className="panel wide">
             <h2>Table and exports</h2>
             <div className="warnings">{result.warnings.map((warning) => <p key={warning}><AlertTriangle size={16} /> {warning}</p>)}</div>
