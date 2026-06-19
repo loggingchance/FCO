@@ -18,12 +18,14 @@ function statePath(stateCode: string) {
   const points = rings.flat();
   if (!points.length) return "";
 
-  const longitudes = points.map(([longitude]) => longitude);
   const latitudes = points.map(([, latitude]) => latitude);
-  const minLongitude = Math.min(...longitudes);
-  const maxLongitude = Math.max(...longitudes);
   const minLatitude = Math.min(...latitudes);
   const maxLatitude = Math.max(...latitudes);
+  const centerLatitude = (minLatitude + maxLatitude) / 2;
+  const longitudeScale = Math.cos(centerLatitude * Math.PI / 180);
+  const projectedLongitudes = points.map(([longitude]) => longitude * longitudeScale);
+  const minLongitude = Math.min(...projectedLongitudes);
+  const maxLongitude = Math.max(...projectedLongitudes);
   const width = Math.max(maxLongitude - minLongitude, 0.1);
   const height = Math.max(maxLatitude - minLatitude, 0.1);
   const scale = Math.min(270 / width, 175 / height);
@@ -31,7 +33,7 @@ function statePath(stateCode: string) {
   const offsetY = (210 - height * scale) / 2;
 
   return rings.map((ring) => ring.map(([longitude, latitude], index) => {
-    const x = offsetX + (longitude - minLongitude) * scale;
+    const x = offsetX + (longitude * longitudeScale - minLongitude) * scale;
     const y = offsetY + (maxLatitude - latitude) * scale;
     return `${index === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`;
   }).join(" ") + " Z").join(" ");

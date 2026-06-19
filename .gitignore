@@ -10,6 +10,7 @@ backend/.pytest_cache/
 
 # Local caches and env
 work/
+tmp/
 .env
 .env.local
 frontend/.env.local
@@ -19,4 +20,3 @@ backend/.env
 .DS_Store
 Thumbs.db
 .vscode/
-

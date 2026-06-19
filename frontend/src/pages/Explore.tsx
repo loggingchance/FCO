@@ -72,17 +72,14 @@ export function Explore() {
   const [liveData, setLiveData] = useState(true);
   const [advanced, setAdvanced] = useState(false);
   const [result, setResult] = useState<EstimateResponse | null>(null);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     api.states()
       .then((items) => {
         setStates(items);
-        setError("");
       })
       .catch(() => {
         setStates(fallbackStates);
-        setError("The hosted data service could not be reached. Selectors are available, but results may use fallback data.");
       });
     api.estimateTypes().then(setEstimateTypes).catch(() => setEstimateTypes(fallbackEstimateTypes));
   }, []);
@@ -106,11 +103,9 @@ export function Explore() {
       filters: advanced ? { ownership_group: "All ownerships", stand_size_class: "All stand sizes" } : {},
     };
     try {
-      setError("");
       setResult(await api.estimate(payload));
     } catch {
       setResult(browserFallback(payload));
-      setError("");
     }
   }
 
@@ -120,7 +115,7 @@ export function Explore() {
         <h1>Explore Carbon</h1>
         <p className="lede">Generate broad-area FIA-style estimates for states, counties, and regions. Results are normalized for cards, charts, tables, maps, and report exports.</p>
       </section>
-      <section className="panel form-panel">
+      <section className="panel form-panel wide">
         <h2>Estimate setup</h2>
         <div className="form-grid">
           <label>
@@ -177,7 +172,6 @@ export function Explore() {
           </div>
         )}
         <button className="primary" onClick={generate}><Play size={17} /> Generate Results</button>
-        {error && <p className="warning-text">{error}</p>}
       </section>
       {result && (
         <>
@@ -185,7 +179,7 @@ export function Explore() {
             <article><span>{result.headline.label}</span><strong>{result.headline.value.toLocaleString()}</strong><em>{result.headline.unit}</em></article>
             <article><span>Per acre</span><strong>{result.headline.per_acre.toLocaleString()}</strong><em>{result.headline.unit}/acre</em></article>
             <article><span>Sampling error</span><strong>{result.rows[0]?.sampling_error_percent ?? "N/A"}%</strong><em>{result.source_mode === "live" ? "FIA estimate" : "illustrative"}</em></article>
-            <article><span>Data status</span><strong className="status-value">{result.source_mode === "live" ? "Official FIA" : result.source_mode === "mock_fallback" ? "Fallback" : "Mock"}</strong><em>{result.evaluation_year || "sample data"}</em></article>
+            <article><span>Data status</span><strong className="status-value">{result.source_mode === "live" ? "Official FIA" : "Illustrative data"}</strong><em>{result.evaluation_year || "sample data"}</em></article>
           </section>
           <section className="panel"><h2>Chart</h2><EstimateChart rows={result.rows} /></section>
           <section className="panel"><h2>Map</h2><MapPanel stateCode={state} label={geoType === "county" ? selectedCountyName : states.find((item) => item.code === state)?.name || state} /></section>
@@ -193,7 +187,7 @@ export function Explore() {
             <h2>Table and exports</h2>
             <div className="warnings">{result.warnings.map((warning) => <p key={warning}><AlertTriangle size={16} /> {warning}</p>)}</div>
             <table>
-              <thead><tr><th>Label</th><th>Total</th><th>Per acre</th><th>Area acres</th><th>Sampling error</th><th>Plots</th></tr></thead>
+              <thead><tr><th>Place</th><th>Total ({result.headline.unit})</th><th>Per acre ({result.headline.unit}/acre)</th><th>Area (acres)</th><th>Sampling error (%)</th><th>Plots (count)</th></tr></thead>
               <tbody>{result.rows.map((row) => <tr key={row.label}><td>{row.label}</td><td>{row.total.toLocaleString()}</td><td>{row.per_acre.toLocaleString()}</td><td>{row.area_acres.toLocaleString()}</td><td>{row.sampling_error_percent ?? "N/A"}%</td><td>{row.plot_count ?? "N/A"}</td></tr>)}</tbody>
             </table>
             <p className="method-note">{result.method_note}</p>

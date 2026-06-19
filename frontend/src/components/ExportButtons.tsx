@@ -51,7 +51,7 @@ th,td{padding:9px;text-align:left;border-bottom:1px solid #d9e0d7}.warning{color
 <h2>${escapeHtml(result.headline.label)}</h2>
 <p><strong>${result.headline.value.toLocaleString()} ${escapeHtml(result.headline.unit)}</strong></p>
 <p>Per acre: ${result.headline.per_acre.toLocaleString()} ${escapeHtml(result.headline.unit)}/acre</p>
-<table><thead><tr><th>Place</th><th>Total</th><th>Per acre</th><th>Area acres</th><th>SE %</th></tr></thead><tbody>${rows}</tbody></table>
+<table><thead><tr><th>Place</th><th>Total (${escapeHtml(result.headline.unit)})</th><th>Per acre (${escapeHtml(result.headline.unit)}/acre)</th><th>Area (acres)</th><th>Sampling error (%)</th></tr></thead><tbody>${rows}</tbody></table>
 <h2>Method and data source</h2><p>${escapeHtml(result.method_note)}</p><p>${escapeHtml(result.data_source)}</p>
 <h2>Important notes</h2><ul class="warning">${warnings}</ul>
 </body></html>`;
