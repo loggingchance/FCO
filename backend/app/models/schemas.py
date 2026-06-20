@@ -33,7 +33,8 @@ class EstimateRow(BaseModel):
     total: float
     per_acre: float
     area_acres: float
-    sampling_error_percent: float | None
+    standard_error: float | None = None
+    sampling_error_percent: float | None = None
     plot_count: int | None = None
     unit: str
 
@@ -48,4 +49,3 @@ class EstimateResponse(BaseModel):
     source_mode: Literal["live", "mock", "mock_fallback"] = "mock"
     evaluation_year: int | None = None
     generated_at: datetime = Field(default_factory=datetime.utcnow)
-

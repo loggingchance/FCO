@@ -47,7 +47,7 @@ const GROUPINGS = {
   carbon_pool: null,
 };
 
-export const config = { maxDuration: 30 };
+export const config = { maxDuration: 60 };
 
 function routePath(request) {
   const value = request.query?.path;
@@ -74,11 +74,11 @@ async function evaluationYears(state) {
 }
 
 function recordKey(record, index) {
-  return String(record?.GRP2 ?? record?.GRP1 ?? index);
+  return String(record?.ROW ?? record?.ROW_NAME ?? record?.RNAME ?? record?.GRP2 ?? record?.GRP1 ?? index);
 }
 
 function groupLabel(record, fallback) {
-  const raw = String(record?.GRP2 ?? record?.GRP1 ?? "").replace(/^`/, "").trim();
+  const raw = String(record?.ROW ?? record?.ROW_NAME ?? record?.RNAME ?? record?.GRP2 ?? record?.GRP1 ?? "").replace(/^`/, "").trim();
   return raw ? raw.replace(/^\d+\s+/, "") : fallback;
 }
 
@@ -106,7 +106,7 @@ function filterExpression(countyFips, filters = {}) {
 
 async function fiaRecords(state, year, definition, countyFips = null, rowGrouping = null, filters = {}) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
+  const timeout = setTimeout(() => controller.abort(), 25000);
   const parameters = new URLSearchParams({
     pselected: "State code",
     snum: String(definition.snum),
@@ -172,6 +172,7 @@ async function officialEstimate(request) {
         total,
         per_acre: total / area,
         area_acres: area,
+        standard_error: numberValue(record, "SE") || null,
         sampling_error_percent: numberValue(record, "SE_PERCENT") || null,
         plot_count: Math.round(numberValue(record, "PLOT_COUNT")) || null,
         unit: definition.unit,
@@ -194,11 +195,15 @@ async function officialEstimate(request) {
         total,
         per_acre: request.estimate_type === "forest_area" ? 1 : (area ? total / area : 0),
         area_acres: area,
+        standard_error: numberValue(record, "SE") || null,
         sampling_error_percent: numberValue(record, "SE_PERCENT") || null,
         plot_count: Math.round(numberValue(record, "PLOT_COUNT")) || null,
         unit: definition.unit,
       };
     }).filter((row) => Number.isFinite(row.total) && row.total > 0);
+    if (rowGrouping && rows.some((row) => row.label === geographyLabel)) {
+      throw new Error(`FIADB did not return the requested ${grouping.replaceAll("_", " ")} grouping`);
+    }
   }
 
   if (!rows.length) throw new Error("FIADB returned no usable estimates");

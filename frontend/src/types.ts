@@ -39,6 +39,7 @@ export interface EstimateRow {
   total: number;
   per_acre: number;
   area_acres: number;
+  standard_error?: number | null;
   sampling_error_percent: number | null;
   plot_count?: number | null;
   unit: string;

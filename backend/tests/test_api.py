@@ -66,6 +66,7 @@ def test_live_fia_forest_area_normalization():
     result = asyncio.run(run())
     assert result.source_mode == "live"
     assert result.headline.value == 17_100_000
+    assert result.rows[0].standard_error == 500_000
     assert result.rows[0].plot_count == 2450
     assert result.evaluation_year == 2023
 

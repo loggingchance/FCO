@@ -131,6 +131,7 @@ class FiaApiService:
         record = await self._fetch_record(request)
 
         value = _number(record, "ESTIMATE")
+        standard_error = _number(record, "SE")
         sampling_error_pct = _number(record, "SE_PERCENT")
         plot_count = int(_number(record, "PLOT_COUNT"))
 
@@ -157,6 +158,7 @@ class FiaApiService:
             total=round(value, 2),
             per_acre=round(per_acre, 4),
             area_acres=round(area, 2),
+            standard_error=round(standard_error, 2),
             sampling_error_percent=round(sampling_error_pct, 2),
             plot_count=plot_count,
             unit=definition.unit,

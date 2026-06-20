@@ -13,9 +13,21 @@ DISCLAIMER = (
 )
 
 
+def _is_carbon(unit: str) -> bool:
+    return "carbon" in unit.lower() and ("ton" in unit.lower() or "tonne" in unit.lower())
+
+
+def _total(value: float, unit: str) -> str:
+    return f"{value:,.0f}" if _is_carbon(unit) else f"{value:,.2f}"
+
+
+def _per_acre(value: float, unit: str) -> str:
+    return f"{value:,.1f}" if _is_carbon(unit) else f"{value:,.2f}"
+
+
 def estimate_html(response: EstimateResponse) -> str:
     rows = "".join(
-        f"<tr><td>{escape(row.label)}</td><td>{row.total:,.2f}</td><td>{row.per_acre:,.2f}</td><td>{row.area_acres:,.2f}</td><td>{row.sampling_error_percent or 'N/A'}</td></tr>"
+        f"<tr><td>{escape(row.label)}</td><td>{_total(row.total, row.unit)}</td><td>{_per_acre(row.per_acre, row.unit)}</td><td>{row.area_acres:,.2f}</td><td>{_total(row.standard_error, row.unit) if row.standard_error is not None else 'N/A'}</td><td>{f'{row.sampling_error_percent:.2f}%' if row.sampling_error_percent is not None else 'N/A'}</td><td>{row.plot_count if row.plot_count is not None else 'N/A'}</td></tr>"
         for row in response.rows
     )
     warnings = "".join(f"<li>{escape(warning)}</li>" for warning in response.warnings)
@@ -26,10 +38,10 @@ def estimate_html(response: EstimateResponse) -> str:
 <h1>FCO Forest Carbon Report</h1>
 <p><em>The COLE Tribute App</em></p>
 <h2>{escape(response.headline.label)}</h2>
-<p><strong>{response.headline.value:,.2f} {escape(response.headline.unit)}</strong></p>
-<p>Per acre: {response.headline.per_acre:,.2f} {escape(response.headline.unit)}/acre</p>
+<p><strong>{_total(response.headline.value, response.headline.unit)} {escape(response.headline.unit)}</strong></p>
+<p>Per acre: {_per_acre(response.headline.per_acre, response.headline.unit)} {escape(response.headline.unit)}/acre</p>
 <h2>Results</h2>
-<table><thead><tr><th>Label</th><th>Total</th><th>Per acre</th><th>Area acres</th><th>Sampling error %</th></tr></thead><tbody>{rows}</tbody></table>
+<table><thead><tr><th>Label</th><th>Total</th><th>Per acre</th><th>Area acres</th><th>Standard error</th><th>Sampling error %</th><th>Plots</th></tr></thead><tbody>{rows}</tbody></table>
 <h2>Plain-English interpretation</h2><p>This broad-area beta result is suitable for public education and workflow testing, not parcel-level or offset-ready accounting.</p>
 <h2>Method and data source</h2><p>{escape(response.method_note)}</p><p>{escape(response.data_source)}</p>
 <h2>Warnings</h2><ul class='warn'>{warnings}</ul>
@@ -47,11 +59,11 @@ def estimate_pdf(response: EstimateResponse) -> bytes:
         Paragraph("The COLE Tribute App", styles["Italic"]),
         Spacer(1, 12),
         Paragraph(response.headline.label, styles["Heading2"]),
-        Paragraph(f"{response.headline.value:,.2f} {response.headline.unit}", styles["Heading3"]),
-        Paragraph(f"Per acre: {response.headline.per_acre:,.2f} {response.headline.unit}/acre", styles["BodyText"]),
+        Paragraph(f"{_total(response.headline.value, response.headline.unit)} {response.headline.unit}", styles["Heading3"]),
+        Paragraph(f"Per acre: {_per_acre(response.headline.per_acre, response.headline.unit)} {response.headline.unit}/acre", styles["BodyText"]),
         Spacer(1, 12),
         Paragraph("Results", styles["Heading2"]),
-        Table([["Label", "Total", "Per acre", "Area acres", "SE %"]] + [[r.label, f"{r.total:,.2f}", f"{r.per_acre:,.2f}", f"{r.area_acres:,.2f}", r.sampling_error_percent or "N/A"] for r in response.rows]),
+        Table([["Label", "Total", "Per acre", "Area", "Std. error", "SE %", "Plots"]] + [[r.label, _total(r.total, r.unit), _per_acre(r.per_acre, r.unit), f"{r.area_acres:,.2f}", _total(r.standard_error, r.unit) if r.standard_error is not None else "N/A", f"{r.sampling_error_percent:.2f}%" if r.sampling_error_percent is not None else "N/A", r.plot_count if r.plot_count is not None else "N/A"] for r in response.rows]),
         Spacer(1, 12),
         Paragraph("Warnings", styles["Heading2"]),
     ]
@@ -65,4 +77,3 @@ def estimate_pdf(response: EstimateResponse) -> bytes:
     ])
     doc.build(elements)
     return buffer.getvalue()
-

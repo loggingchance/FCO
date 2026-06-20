@@ -65,6 +65,7 @@ def generate_mock_estimate(request: EstimateRequest) -> EstimateResponse:
                 total=round(carbon * share, 2),
                 per_acre=round((carbon * share) / area, 2),
                 area_acres=round(area, 2),
+                standard_error=round(carbon * share * (se + idx * 0.7) / 100, 2),
                 sampling_error_percent=round(se + idx * 0.7, 1),
                 unit="tons CO2e",
             )
@@ -72,11 +73,11 @@ def generate_mock_estimate(request: EstimateRequest) -> EstimateResponse:
         ]
     elif request.grouping == "ownership_group":
         rows = [
-            EstimateRow(label="Public", total=round(headline_value * 0.38, 2), per_acre=round(per_acre * 1.05, 2), area_acres=round(area * 0.36, 2), sampling_error_percent=round(se + 1.8, 1), unit=unit),
-            EstimateRow(label="Private", total=round(headline_value * 0.62, 2), per_acre=round(per_acre * 0.97, 2), area_acres=round(area * 0.64, 2), sampling_error_percent=round(se + 1.1, 1), unit=unit),
+            EstimateRow(label="Public", total=round(headline_value * 0.38, 2), per_acre=round(per_acre * 1.05, 2), area_acres=round(area * 0.36, 2), standard_error=round(headline_value * 0.38 * (se + 1.8) / 100, 2), sampling_error_percent=round(se + 1.8, 1), unit=unit),
+            EstimateRow(label="Private", total=round(headline_value * 0.62, 2), per_acre=round(per_acre * 0.97, 2), area_acres=round(area * 0.64, 2), standard_error=round(headline_value * 0.62 * (se + 1.1) / 100, 2), sampling_error_percent=round(se + 1.1, 1), unit=unit),
         ]
     else:
-        rows = [EstimateRow(label=label, total=round(headline_value, 2), per_acre=round(per_acre, 2), area_acres=round(area, 2), sampling_error_percent=round(se, 1), unit=unit)]
+        rows = [EstimateRow(label=label, total=round(headline_value, 2), per_acre=round(per_acre, 2), area_acres=round(area, 2), standard_error=round(headline_value * se / 100, 2), sampling_error_percent=round(se, 1), unit=unit)]
 
     warnings = [
         "Beta mock estimate. Real FIA/EVALIDator parameters must be verified before production use.",

@@ -20,12 +20,16 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
   return (
     <section className="hero">
       <div className="hero-copy">
-        <p className="eyebrow">Independent COLE-inspired beta</p>
-        <h1>FCO - Forest Carbon Online</h1>
-        <p className="subtitle">The COLE Tribute App</p>
-        <p className="lede">Explore FIA-based forest carbon estimates for counties, states, and regions through simple maps, charts, tables, and downloadable reports.</p>
+        <p className="eyebrow">FIA public data explorer</p>
+        <h1 className="home-task-title">Choose a place. Build an estimate.</h1>
+        <p className="lede">Select a state or county, choose the forest carbon measure you need, and generate a documented result with maps, tables, and exports.</p>
+        <div className="home-scope-grid" aria-label="Explorer coverage">
+          <div><strong>50 states + DC</strong><span>Nationwide coverage</span></div>
+          <div><strong>3,143</strong><span>Counties and equivalents</span></div>
+          <div><strong>FIA uncertainty</strong><span>Error and plot counts</span></div>
+        </div>
         <div className="home-primary-actions">
-          <button className="primary" onClick={() => setPage("explore")}>Start Exploring <ArrowRight size={17} /></button>
+          <button className="primary" onClick={() => setPage("explore")}>Choose a Place <ArrowRight size={17} /></button>
         </div>
         <div className="home-secondary-actions">
           <button onClick={() => setPage("reports")}><FileText size={17} /> Sample Report</button>
