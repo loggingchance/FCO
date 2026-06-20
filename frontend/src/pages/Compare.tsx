@@ -5,7 +5,7 @@ import { ExportButtons } from "../components/ExportButtons";
 import { api } from "../services/api";
 import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
 import { COUNTIES, STATES } from "../../shared/counties.js";
-import { alternateCarbon, formatPerAcreEstimate, formatTotalEstimate } from "../utils/units";
+import { alternateCarbon, formatPerAcreEstimate, formatPercent, formatTotalEstimate } from "../utils/units";
 import { saveLastResult } from "../utils/results";
 
 const DEFAULT_ESTIMATES = [
@@ -24,8 +24,9 @@ export function Compare() {
   const [countyB, setCountyB] = useState("55003");
   const [estimateTypes, setEstimateTypes] = useState(DEFAULT_ESTIMATES);
   const [estimateType, setEstimateType] = useState("total_carbon");
-  const [years, setYears] = useState([2023, 2022, 2021, 2020]);
-  const [year, setYear] = useState(2023);
+  const [years, setYears] = useState<number[]>([]);
+  const [year, setYear] = useState(0);
+  const [yearMessage, setYearMessage] = useState("Loading common FIA evaluation years...");
   const [result, setResult] = useState<EstimateResponse | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,12 +51,18 @@ export function Compare() {
 
   useEffect(() => {
     const stateCodes = geography === "state" ? [stateA, stateB] : [countyState];
+    setYears([]);
+    setYearMessage("Loading common FIA evaluation years...");
     Promise.all(stateCodes.map((code) => api.evaluationYears(code))).then((sets) => {
       const common = sets[0].filter((candidate) => sets.every((set) => set.includes(candidate)));
-      if (!common.length) return;
+      if (!common.length) {
+        setYearMessage("The selected places have no common FIA evaluation year.");
+        return;
+      }
       setYears(common);
       setYear((current) => common.includes(current) ? current : common[0]);
-    }).catch(() => setYears([2023, 2022, 2021, 2020]));
+      setYearMessage("Only evaluation years published for both selected places are shown.");
+    }).catch(() => setYearMessage("FIA evaluation years are temporarily unavailable."));
   }, [geography, stateA, stateB, countyState]);
 
   const placeNames = useMemo(() => geography === "state"
@@ -64,6 +71,10 @@ export function Compare() {
   [geography, states, stateA, stateB, counties, countyA, countyB]);
 
   async function compare() {
+    if (!year) {
+      setError("Select a common FIA evaluation year before comparing places.");
+      return;
+    }
     const duplicate = geography === "state" ? stateA === stateB : countyA === countyB;
     if (duplicate) {
       setError("Choose two different places to compare.");
@@ -123,14 +134,14 @@ export function Compare() {
             <label>Second county<select value={countyB} onChange={(event) => setCountyB(event.target.value)}>{counties.map((item) => <option key={item.fips} value={item.fips}>{item.name}</option>)}</select></label>
           </>}
           <label>Estimate type<select value={estimateType} onChange={(event) => setEstimateType(event.target.value)}>{estimateTypes.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-          <label>FIA evaluation year<select value={year} onChange={(event) => setYear(Number(event.target.value))}>{years.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>
+          <label>FIA evaluation year<select value={year} disabled={!years.length} onChange={(event) => setYear(Number(event.target.value))}>{!years.length && <option value={0}>Unavailable</option>}{years.map((item) => <option key={item} value={item}>{item}</option>)}</select><small className="field-help">{yearMessage}</small></label>
         </div>
         <div className="form-actions form-actions-end"><button className="primary" onClick={compare} disabled={loading}><GitCompare size={17} /> {loading ? "Comparing..." : "Compare Places"}</button></div>
         {error && <p className="request-error" role="alert">{error}</p>}
       </section>
       {result && <>
         <section className="panel wide"><h2>{result.headline.label}</h2><EstimateChart rows={result.rows} /></section>
-        <section className="panel wide"><h2>Comparison table</h2><div className="table-scroll"><table><thead><tr><th>Place</th><th>Total</th><th>Per acre</th><th>Area (acres)</th><th>Standard error</th><th>Sampling error</th><th>Plots</th></tr></thead><tbody>{result.rows.map((row) => <tr key={row.label}><td>{row.label}</td><td className="dual-unit-value"><strong>{formatTotalEstimate(row.total, row.unit)}</strong><span>{row.unit}</span>{alternateCarbon(row.total, row.unit) && <><strong>{formatTotalEstimate(alternateCarbon(row.total, row.unit)!.value, alternateCarbon(row.total, row.unit)!.unit)}</strong><span>{alternateCarbon(row.total, row.unit)!.unit}</span></>}</td><td className="dual-unit-value"><strong>{formatPerAcreEstimate(row.per_acre, row.unit)}</strong><span>{row.unit}/acre</span>{alternateCarbon(row.per_acre, row.unit) && <><strong>{formatPerAcreEstimate(alternateCarbon(row.per_acre, row.unit)!.value, alternateCarbon(row.per_acre, row.unit)!.unit)}</strong><span>{alternateCarbon(row.per_acre, row.unit)!.unit}/acre</span></>}</td><td>{row.area_acres.toLocaleString()}</td><td className="dual-unit-value">{row.standard_error == null ? "N/A" : <><strong>{formatTotalEstimate(row.standard_error, row.unit)}</strong><span>{row.unit}</span>{alternateCarbon(row.standard_error, row.unit) && <><strong>{formatTotalEstimate(alternateCarbon(row.standard_error, row.unit)!.value, alternateCarbon(row.standard_error, row.unit)!.unit)}</strong><span>{alternateCarbon(row.standard_error, row.unit)!.unit}</span></>}</>}</td><td>{row.sampling_error_percent == null ? "N/A" : `${row.sampling_error_percent}%`}</td><td>{row.plot_count ?? "N/A"}</td></tr>)}</tbody></table></div><ExportButtons result={result} /></section>
+        <section className="panel wide"><h2>Comparison table</h2><div className="table-scroll"><table><thead><tr><th>Place</th><th>Total</th><th>Per acre</th><th>Area (acres)</th><th>Standard error</th><th>Sampling error</th><th>Plots</th></tr></thead><tbody>{result.rows.map((row) => <tr key={row.label}><td>{row.label}</td><td className="dual-unit-value"><strong>{formatTotalEstimate(row.total, row.unit)}</strong><span>{row.unit}</span>{alternateCarbon(row.total, row.unit) && <><strong>{formatTotalEstimate(alternateCarbon(row.total, row.unit)!.value, alternateCarbon(row.total, row.unit)!.unit)}</strong><span>{alternateCarbon(row.total, row.unit)!.unit}</span></>}</td><td className="dual-unit-value"><strong>{formatPerAcreEstimate(row.per_acre, row.unit)}</strong><span>{row.unit}/acre</span>{alternateCarbon(row.per_acre, row.unit) && <><strong>{formatPerAcreEstimate(alternateCarbon(row.per_acre, row.unit)!.value, alternateCarbon(row.per_acre, row.unit)!.unit)}</strong><span>{alternateCarbon(row.per_acre, row.unit)!.unit}/acre</span></>}</td><td>{row.area_acres.toLocaleString()}</td><td className="dual-unit-value">{row.standard_error == null ? "N/A" : <><strong>{formatTotalEstimate(row.standard_error, row.unit)}</strong><span>{row.unit}</span>{alternateCarbon(row.standard_error, row.unit) && <><strong>{formatTotalEstimate(alternateCarbon(row.standard_error, row.unit)!.value, alternateCarbon(row.standard_error, row.unit)!.unit)}</strong><span>{alternateCarbon(row.standard_error, row.unit)!.unit}</span></>}</>}</td><td>{row.sampling_error_percent == null ? "N/A" : formatPercent(row.sampling_error_percent)}</td><td>{row.plot_count ?? "N/A"}</td></tr>)}</tbody></table></div><ExportButtons result={result} /></section>
       </>}
     </div>
   );

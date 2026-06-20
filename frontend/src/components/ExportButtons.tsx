@@ -1,6 +1,6 @@
 import { Download, FileDown, Printer } from "lucide-react";
 import type { EstimateResponse } from "../types";
-import { alternateCarbon, formatPerAcreEstimate, formatTotalEstimate, isCarbonUnit, roundPerAcreEstimate, roundTotalEstimate } from "../utils/units";
+import { alternateCarbon, formatPerAcreEstimate, formatPercent, formatTotalEstimate, isCarbonUnit, roundPerAcreEstimate, roundTotalEstimate } from "../utils/units";
 
 function toCsv(result: EstimateResponse) {
   const carbon = isCarbonUnit(result.headline.unit);
@@ -43,7 +43,7 @@ function toHtml(result: EstimateResponse) {
       <td>${formatPerAcreEstimate(row.per_acre, row.unit)} ${escapeHtml(row.unit)}/acre${carbon ? `<br>${formatPerAcreEstimate(alternateCarbon(row.per_acre, row.unit)!.value, alternateCarbon(row.per_acre, row.unit)!.unit)} ${alternateCarbon(row.per_acre, row.unit)!.unit}/acre` : ""}</td>
       <td>${row.area_acres.toLocaleString()}</td>
       <td>${row.standard_error == null ? "N/A" : `${formatTotalEstimate(row.standard_error, row.unit)} ${escapeHtml(row.unit)}${carbon ? `<br>${formatTotalEstimate(alternateCarbon(row.standard_error, row.unit)!.value, alternateCarbon(row.standard_error, row.unit)!.unit)} ${alternateCarbon(row.standard_error, row.unit)!.unit}` : ""}`}</td>
-      <td>${row.sampling_error_percent == null ? "N/A" : `${row.sampling_error_percent}%`}</td>
+      <td>${row.sampling_error_percent == null ? "N/A" : formatPercent(row.sampling_error_percent)}</td>
       <td>${row.plot_count ?? "N/A"}</td>
     </tr>`).join("");
   const warnings = result.warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join("");

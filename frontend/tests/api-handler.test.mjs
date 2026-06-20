@@ -48,6 +48,19 @@ test("deployed URL paths resolve without a catch-all query parameter", async () 
   assert.ok(counties.body.length > 0);
 });
 
+test("nested FIA evaluation parameters expose every published state year", async (context) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({
+    ok: true,
+    json: async () => ({ parameters: { values: [{ value: "332025 New Hampshire" }, { VALUE: 332024 }, { code: "332023" }, { value: "422025 Pennsylvania" }] } }),
+  });
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await call({ url: "/api/options/evaluation-years?state=NH" });
+  assert.equal(response.code, 200);
+  assert.deepEqual(response.body, [2025, 2024, 2023]);
+});
+
 test("every estimate type produces a normalized official result", async (context) => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => fiaResponse(url);

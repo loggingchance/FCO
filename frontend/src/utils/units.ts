@@ -46,3 +46,7 @@ export function roundTotalEstimate(value: number, unit: string) {
 export function roundPerAcreEstimate(value: number, unit: string) {
   return isCarbonUnit(unit) ? Math.round(value * 10) / 10 : value;
 }
+
+export function formatPercent(value: number) {
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
+}

@@ -74,13 +74,19 @@ async function evaluationYears(state) {
   if (!STATE_FIPS[state]) return [];
   const response = await fetch("https://apps.fs.usda.gov/fiadb-api/fullreport/parameters/wc", { headers: { "User-Agent": "FCO/0.1 FIADB validation client" } });
   if (!response.ok) throw new Error(`FIADB parameter service returned HTTP ${response.status}`);
-  const values = await response.json();
-  return [...new Set(values
-    .map((item) => String(item.value ?? item.VALUE ?? ""))
-    .filter((value) => value.startsWith(STATE_FIPS[state]))
-    .map((value) => Number(value.slice(-4)))
-    .filter((year) => Number.isInteger(year) && year >= 2000 && year <= 2100))]
-    .sort((a, b) => b - a);
+  const payload = await response.json();
+  const primitiveValues = [];
+  const visit = (value) => {
+    if (Array.isArray(value)) return value.forEach(visit);
+    if (value && typeof value === "object") return Object.values(value).forEach(visit);
+    if (value !== null && value !== undefined) primitiveValues.push(String(value));
+  };
+  visit(payload);
+
+  const prefix = STATE_FIPS[state];
+  const pattern = new RegExp(`(?:^|\\D)${prefix}(20\\d{2})(?:\\D|$)`, "g");
+  const years = primitiveValues.flatMap((value) => [...value.matchAll(pattern)].map((match) => Number(match[1])));
+  return [...new Set(years.filter((year) => year >= 2000 && year <= 2100))].sort((a, b) => b - a);
 }
 
 function recordKey(record, index) {

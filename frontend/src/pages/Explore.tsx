@@ -5,7 +5,7 @@ import { ExportButtons } from "../components/ExportButtons";
 import { MapPanel } from "../components/MapPanel";
 import { api } from "../services/api";
 import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
-import { alternateCarbon, formatEstimate, formatPerAcreEstimate, formatTotalEstimate } from "../utils/units";
+import { alternateCarbon, formatEstimate, formatPerAcreEstimate, formatPercent, formatTotalEstimate } from "../utils/units";
 import { saveLastResult } from "../utils/results";
 import { COUNTIES, STATES } from "../../shared/counties.js";
 import { ADVANCED_FILTERS } from "../../shared/fiaOptions.js";
@@ -45,8 +45,9 @@ export function Explore() {
   const [geoType, setGeoType] = useState<"state" | "county">("state");
   const [estimateType, setEstimateType] = useState("total_carbon");
   const [grouping, setGrouping] = useState("state");
-  const [evaluationYear, setEvaluationYear] = useState(2023);
-  const [evaluationYears, setEvaluationYears] = useState([2023, 2022, 2021, 2020]);
+  const [evaluationYear, setEvaluationYear] = useState(0);
+  const [evaluationYears, setEvaluationYears] = useState<number[]>([]);
+  const [yearMessage, setYearMessage] = useState("Loading FIA evaluation years...");
   const [advanced, setAdvanced] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [result, setResult] = useState<EstimateResponse | null>(null);
@@ -76,11 +77,17 @@ export function Explore() {
   }, [state]);
 
   useEffect(() => {
+    setEvaluationYears([]);
+    setYearMessage("Loading FIA evaluation years...");
     api.evaluationYears(state).then((years) => {
-      if (!years.length) return;
+      if (!years.length) {
+        setYearMessage("No FIA evaluation years were returned for this state.");
+        return;
+      }
       setEvaluationYears(years);
       setEvaluationYear((current) => years.includes(current) ? current : years[0]);
-    }).catch(() => setEvaluationYears([2023, 2022, 2021, 2020]));
+      setYearMessage("Years are state-specific FIA evaluation groups and may lag the current calendar year.");
+    }).catch(() => setYearMessage("FIA evaluation years are temporarily unavailable."));
   }, [state]);
 
   const selectedCountyName = useMemo(() => counties.find((item) => item.fips === county)?.name || "Selected county", [counties, county]);
@@ -106,6 +113,10 @@ export function Explore() {
   }
 
   async function generate() {
+    if (!evaluationYear) {
+      setRequestError("Select an available FIA evaluation year before generating results.");
+      return;
+    }
     const payload: EstimateRequest = {
       geography: { type: geoType, states: [state], counties: geoType === "county" ? [county] : [] },
       estimate_type: estimateType,
@@ -173,9 +184,11 @@ export function Explore() {
           </label>
           <label>
             FIA evaluation year
-            <select value={evaluationYear} onChange={(e) => setEvaluationYear(Number(e.target.value))}>
+            <select value={evaluationYear} disabled={!evaluationYears.length} onChange={(e) => setEvaluationYear(Number(e.target.value))}>
+              {!evaluationYears.length && <option value={0}>Unavailable</option>}
               {evaluationYears.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
+            <small className="field-help">{yearMessage}</small>
           </label>
         </div>
         <p className="official-data-note"><strong>Official FIA/EVALIDator data</strong><span>Results are requested directly from the USDA Forest Service FIA service.</span></p>
@@ -216,7 +229,7 @@ export function Explore() {
               <em>{result.rows.length === 1 && result.rows[0]?.standard_error != null ? result.rows[0].unit : "See results table"}</em>
               {result.rows.length === 1 && result.rows[0]?.standard_error != null && alternateCarbon(result.rows[0].standard_error, result.rows[0].unit) && <small>{formatTotalEstimate(alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.value, alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.unit)} {alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.unit}</small>}
             </article>
-            <article><span>Sampling error</span><strong>{result.rows.length === 1 && result.rows[0]?.sampling_error_percent != null ? `${result.rows[0].sampling_error_percent}%` : "By row"}</strong><em>{result.rows.length === 1 ? (result.source_mode === "live" ? "FIA estimate" : "illustrative") : "See results table"}</em></article>
+            <article><span>Sampling error</span><strong>{result.rows.length === 1 && result.rows[0]?.sampling_error_percent != null ? formatPercent(result.rows[0].sampling_error_percent) : "By row"}</strong><em>{result.rows.length === 1 ? "FIA estimate" : "See results table"}</em></article>
             <article><span>Contributing plots</span><strong>{result.rows.length === 1 ? result.rows[0]?.plot_count ?? "N/A" : "By row"}</strong><em>{result.rows.length === 1 ? "FIA plots" : "See results table"}</em></article>
             <article><span>Data status</span><strong className="status-value">{result.source_mode === "live" ? "Official FIA" : "Illustrative data"}</strong><em>{result.evaluation_year || "sample data"}</em></article>
           </section>
@@ -234,7 +247,7 @@ export function Explore() {
                 <td className="dual-unit-value"><strong>{formatPerAcreEstimate(row.per_acre, row.unit)}</strong><span>{row.unit}/acre</span>{alternateCarbon(row.per_acre, row.unit) && <><strong>{formatPerAcreEstimate(alternateCarbon(row.per_acre, row.unit)!.value, alternateCarbon(row.per_acre, row.unit)!.unit)}</strong><span>{alternateCarbon(row.per_acre, row.unit)!.unit}/acre</span></>}</td>
                 <td>{formatEstimate(row.area_acres)}</td>
                 <td className="dual-unit-value">{row.standard_error == null ? "N/A" : <><strong>{formatTotalEstimate(row.standard_error, row.unit)}</strong><span>{row.unit}</span>{alternateCarbon(row.standard_error, row.unit) && <><strong>{formatTotalEstimate(alternateCarbon(row.standard_error, row.unit)!.value, alternateCarbon(row.standard_error, row.unit)!.unit)}</strong><span>{alternateCarbon(row.standard_error, row.unit)!.unit}</span></>}</>}</td>
-                <td>{row.sampling_error_percent == null ? "N/A" : `${row.sampling_error_percent}%`}</td><td>{row.plot_count ?? "N/A"}</td>
+                <td>{row.sampling_error_percent == null ? "N/A" : formatPercent(row.sampling_error_percent)}</td><td>{row.plot_count ?? "N/A"}</td>
               </tr>)}</tbody>
             </table></div>
             <p className="method-note">{result.method_note}</p>
