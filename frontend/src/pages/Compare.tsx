@@ -12,6 +12,7 @@ const DEFAULT_ESTIMATES = [
   { id: "forest_area", label: "Forest area", unit: "acres" },
   { id: "total_carbon", label: "Total forest carbon", unit: "metric tonnes carbon" },
 ];
+const SAFE_EVALUATION_YEARS = [2023, 2022, 2021, 2020, 2019, 2018];
 
 export function Compare() {
   const [geography, setGeography] = useState<"state" | "county">("state");
@@ -24,8 +25,8 @@ export function Compare() {
   const [countyB, setCountyB] = useState("55003");
   const [estimateTypes, setEstimateTypes] = useState(DEFAULT_ESTIMATES);
   const [estimateType, setEstimateType] = useState("total_carbon");
-  const [years, setYears] = useState<number[]>([]);
-  const [year, setYear] = useState(0);
+  const [years, setYears] = useState<number[]>(SAFE_EVALUATION_YEARS);
+  const [year, setYear] = useState(2023);
   const [yearMessage, setYearMessage] = useState("Loading common FIA evaluation years...");
   const [result, setResult] = useState<EstimateResponse | null>(null);
   const [error, setError] = useState("");
@@ -51,18 +52,22 @@ export function Compare() {
 
   useEffect(() => {
     const stateCodes = geography === "state" ? [stateA, stateB] : [countyState];
-    setYears([]);
     setYearMessage("Loading common FIA evaluation years...");
     Promise.all(stateCodes.map((code) => api.evaluationYears(code))).then((sets) => {
       const common = sets[0].filter((candidate) => sets.every((set) => set.includes(candidate)));
       if (!common.length) {
-        setYearMessage("The selected places have no common FIA evaluation year.");
+        setYears(SAFE_EVALUATION_YEARS);
+        setYearMessage("Using recent evaluation years while FIA year availability is refreshed.");
         return;
       }
       setYears(common);
       setYear((current) => common.includes(current) ? current : common[0]);
       setYearMessage("Only evaluation years published for both selected places are shown.");
-    }).catch(() => setYearMessage("FIA evaluation years are temporarily unavailable."));
+    }).catch(() => {
+      setYears(SAFE_EVALUATION_YEARS);
+      setYear((current) => SAFE_EVALUATION_YEARS.includes(current) ? current : SAFE_EVALUATION_YEARS[0]);
+      setYearMessage("Using recent evaluation years while FIA year availability is refreshed.");
+    });
   }, [geography, stateA, stateB, countyState]);
 
   const placeNames = useMemo(() => geography === "state"
@@ -134,7 +139,7 @@ export function Compare() {
             <label>Second county<select value={countyB} onChange={(event) => setCountyB(event.target.value)}>{counties.map((item) => <option key={item.fips} value={item.fips}>{item.name}</option>)}</select></label>
           </>}
           <label>Estimate type<select value={estimateType} onChange={(event) => setEstimateType(event.target.value)}>{estimateTypes.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}</select></label>
-          <label>FIA evaluation year<select value={year} disabled={!years.length} onChange={(event) => setYear(Number(event.target.value))}>{!years.length && <option value={0}>Unavailable</option>}{years.map((item) => <option key={item} value={item}>{item}</option>)}</select><small className="field-help">{yearMessage}</small></label>
+          <label>FIA evaluation year<select value={year} onChange={(event) => setYear(Number(event.target.value))}>{years.map((item) => <option key={item} value={item}>{item}</option>)}</select><small className="field-help">{yearMessage}</small></label>
         </div>
         <div className="form-actions form-actions-end"><button className="primary" onClick={compare} disabled={loading}><GitCompare size={17} /> {loading ? "Comparing..." : "Compare Places"}</button></div>
         {error && <p className="request-error" role="alert">{error}</p>}

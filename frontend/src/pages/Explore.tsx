@@ -11,6 +11,7 @@ import { COUNTIES, STATES } from "../../shared/counties.js";
 import { ADVANCED_FILTERS } from "../../shared/fiaOptions.js";
 
 const fallbackStates: StateOption[] = STATES;
+const SAFE_EVALUATION_YEARS = [2023, 2022, 2021, 2020, 2019, 2018];
 
 const fallbackEstimateTypes = [
   { id: "forest_area", label: "Forest area", unit: "acres" },
@@ -45,8 +46,8 @@ export function Explore() {
   const [geoType, setGeoType] = useState<"state" | "county">("state");
   const [estimateType, setEstimateType] = useState("total_carbon");
   const [grouping, setGrouping] = useState("state");
-  const [evaluationYear, setEvaluationYear] = useState(0);
-  const [evaluationYears, setEvaluationYears] = useState<number[]>([]);
+  const [evaluationYear, setEvaluationYear] = useState(2023);
+  const [evaluationYears, setEvaluationYears] = useState<number[]>(SAFE_EVALUATION_YEARS);
   const [yearMessage, setYearMessage] = useState("Loading FIA evaluation years...");
   const [advanced, setAdvanced] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -77,17 +78,21 @@ export function Explore() {
   }, [state]);
 
   useEffect(() => {
-    setEvaluationYears([]);
     setYearMessage("Loading FIA evaluation years...");
     api.evaluationYears(state).then((years) => {
       if (!years.length) {
-        setYearMessage("No FIA evaluation years were returned for this state.");
+        setEvaluationYears(SAFE_EVALUATION_YEARS);
+        setYearMessage("Using recent evaluation years while FIA year availability is refreshed.");
         return;
       }
       setEvaluationYears(years);
       setEvaluationYear((current) => years.includes(current) ? current : years[0]);
       setYearMessage("Years are state-specific FIA evaluation groups and may lag the current calendar year.");
-    }).catch(() => setYearMessage("FIA evaluation years are temporarily unavailable."));
+    }).catch(() => {
+      setEvaluationYears(SAFE_EVALUATION_YEARS);
+      setEvaluationYear((current) => SAFE_EVALUATION_YEARS.includes(current) ? current : SAFE_EVALUATION_YEARS[0]);
+      setYearMessage("Using recent evaluation years while FIA year availability is refreshed.");
+    });
   }, [state]);
 
   const selectedCountyName = useMemo(() => counties.find((item) => item.fips === county)?.name || "Selected county", [counties, county]);
@@ -184,8 +189,7 @@ export function Explore() {
           </label>
           <label>
             FIA evaluation year
-            <select value={evaluationYear} disabled={!evaluationYears.length} onChange={(e) => setEvaluationYear(Number(e.target.value))}>
-              {!evaluationYears.length && <option value={0}>Unavailable</option>}
+            <select value={evaluationYear} onChange={(e) => setEvaluationYear(Number(e.target.value))}>
               {evaluationYears.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
             <small className="field-help">{yearMessage}</small>

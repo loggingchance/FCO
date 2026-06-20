@@ -72,21 +72,43 @@ function numberValue(record, key) {
 
 async function evaluationYears(state) {
   if (!STATE_FIPS[state]) return [];
-  const response = await fetch("https://apps.fs.usda.gov/fiadb-api/fullreport/parameters/wc", { headers: { "User-Agent": "FCO/0.1 FIADB validation client" } });
-  if (!response.ok) throw new Error(`FIADB parameter service returned HTTP ${response.status}`);
-  const payload = await response.json();
-  const primitiveValues = [];
-  const visit = (value) => {
-    if (Array.isArray(value)) return value.forEach(visit);
-    if (value && typeof value === "object") return Object.values(value).forEach(visit);
-    if (value !== null && value !== undefined) primitiveValues.push(String(value));
-  };
-  visit(payload);
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch("https://apps.fs.usda.gov/fiadb-api/fullreport/parameters/wc", {
+      headers: { "User-Agent": "FCO/0.1 FIADB validation client" },
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+    if (!response.ok) throw new Error(`FIADB parameter service returned HTTP ${response.status}`);
+    const payload = await response.json();
+    const primitiveValues = [];
+    const visit = (value) => {
+      if (Array.isArray(value)) return value.forEach(visit);
+      if (value && typeof value === "object") return Object.values(value).forEach(visit);
+      if (value !== null && value !== undefined) primitiveValues.push(String(value));
+    };
+    visit(payload);
 
-  const prefix = STATE_FIPS[state];
-  const pattern = new RegExp(`(?:^|\\D)${prefix}(20\\d{2})(?:\\D|$)`, "g");
-  const years = primitiveValues.flatMap((value) => [...value.matchAll(pattern)].map((match) => Number(match[1])));
-  return [...new Set(years.filter((year) => year >= 2000 && year <= 2100))].sort((a, b) => b - a);
+    const prefix = STATE_FIPS[state];
+    const pattern = new RegExp(`(?:^|\\D)${prefix}(20\\d{2})(?:\\D|$)`, "g");
+    const years = primitiveValues.flatMap((value) => [...value.matchAll(pattern)].map((match) => Number(match[1])));
+    const published = [...new Set(years.filter((year) => year >= 2000 && year <= 2100))].sort((a, b) => b - a);
+    if (published.length) return published;
+  } catch {
+    // The parameter catalog is less reliable than the estimate endpoint; probe below.
+  }
+
+  const currentYear = new Date().getUTCFullYear();
+  const candidates = Array.from({ length: 8 }, (_, index) => currentYear - index);
+  const checks = await Promise.allSettled(candidates.map(async (year) => {
+    await fiaRecords(state, year, DEFINITIONS.forest_area);
+    return year;
+  }));
+  return checks
+    .filter((check) => check.status === "fulfilled")
+    .map((check) => check.value)
+    .sort((a, b) => b - a);
 }
 
 function recordKey(record, index) {
@@ -258,6 +280,7 @@ export default async function handler(request, response) {
   if (request.method === "GET" && path === "options/estimate-types") return response.status(200).json(ESTIMATE_TYPES);
   if (request.method === "GET" && path === "options/evaluation-years") {
     try {
+      response.setHeader("Cache-Control", "s-maxage=86400, stale-while-revalidate=604800");
       return response.status(200).json(await evaluationYears(String(queryParameter(request, "state"))));
     } catch (error) {
       return response.status(502).json({ detail: error instanceof Error ? error.message : "Evaluation years unavailable" });
