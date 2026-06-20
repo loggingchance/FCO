@@ -93,13 +93,12 @@ select { width: 100%; border: 1px solid var(--line); border-radius: 7px; backgro
 .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 18px; }
 .form-actions .link-button { flex: 0 0 auto; }
 .form-actions .primary { flex: 0 0 auto; }
+.form-actions-end { justify-content: flex-end; }
 .toggle-row { display: flex; align-items: center; gap: 9px; width: max-content; margin: 14px 0; color: var(--ink); }
 .toggle-row input { width: 18px; height: 18px; accent-color: var(--green); }
 .official-data-option { margin-top: 14px; }
 .official-data-option .toggle-row { margin: 0; }
 .official-data-option p { max-width: 700px; margin: 5px 0 0 27px; color: var(--muted); font-size: .84rem; }
-.advanced-toggle svg { transition: transform .16s ease; }
-.advanced-toggle svg.open { transform: rotate(180deg); }
 .filter-row span { background: #eef4ea; border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; }
 .result-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
 .result-cards article { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 18px; }

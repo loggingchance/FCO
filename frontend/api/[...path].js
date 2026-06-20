@@ -45,16 +45,18 @@ function numberValue(record, key) {
   return Number(String(value).replaceAll(",", ""));
 }
 
-async function fiaRecord(state, year, definition) {
+async function fiaRecord(state, year, definition, countyFips = null) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12000);
   const parameters = new URLSearchParams({
+    pselected: "State code",
     snum: String(definition.snum),
     wc: `${STATE_FIPS[state]}${year}`,
     rselected: "None",
     cselected: "None",
     outputFormat: "NJSON",
   });
+  if (countyFips) parameters.set("strFilter", `plot.COUNTYCD = ${Number(countyFips.slice(-3))}`);
 
   try {
     const response = await fetch(`https://apps.fs.usda.gov/fiadb-api/fullreport?${parameters}`, {
@@ -77,17 +79,20 @@ async function fiaRecord(state, year, definition) {
 }
 
 async function officialEstimate(request) {
+  if (request?.live_data === false) throw new Error("Official FIA data was not requested");
   const state = request?.geography?.states?.[0];
+  const countyFips = request?.geography?.type === "county" ? request?.geography?.counties?.[0] : null;
   const year = request?.evaluation_year || 2023;
   const definition = DEFINITIONS[request?.estimate_type];
-  if (request?.geography?.type !== "state" || !STATE_FIPS[state]) throw new Error("Live estimates currently support one listed state");
+  if (!STATE_FIPS[state] || !["state", "county"].includes(request?.geography?.type)) throw new Error("Live estimates require one listed state or county");
+  if (countyFips && (!COUNTIES.some((county) => county.fips === countyFips) || !countyFips.startsWith(String(STATE_FIPS[state])))) throw new Error("The selected county does not match the selected state");
   if (!definition) throw new Error("This estimate type is not enabled for live FIA requests");
-  if (request?.grouping && request.grouping !== "state") throw new Error("Live estimates currently support state totals");
+  if (request?.grouping && request.grouping !== request.geography.type) throw new Error("The result grouping must match the selected geography");
   if (request?.filters && Object.keys(request.filters).length) throw new Error("Live advanced filters are not enabled");
 
   const [record, areaRecord] = await Promise.all([
-    fiaRecord(state, year, definition),
-    request.estimate_type === "forest_area" ? Promise.resolve(null) : fiaRecord(state, year, DEFINITIONS.forest_area),
+    fiaRecord(state, year, definition, countyFips),
+    request.estimate_type === "forest_area" ? Promise.resolve(null) : fiaRecord(state, year, DEFINITIONS.forest_area, countyFips),
   ]);
   const value = numberValue(record, "ESTIMATE");
   const samplingError = numberValue(record, "SE_PERCENT");
@@ -102,7 +107,9 @@ async function officialEstimate(request) {
     perAcre = value / area;
   }
 
-  const label = STATES.find((item) => item.code === state)?.name || state;
+  const label = countyFips
+    ? COUNTIES.find((county) => county.fips === countyFips)?.name || countyFips
+    : STATES.find((item) => item.code === state)?.name || state;
   const warnings = ["Official broad-area FIA/EVALIDator estimate; do not use it as a parcel, stand, or offset-project estimate."];
   if (samplingError >= 20) warnings.push("Sampling error is 20% or greater; interpret this estimate cautiously.");
   if (plotCount > 0 && plotCount < 30) warnings.push("Fewer than 30 plots contribute to this estimate; reliability may be limited.");
@@ -120,7 +127,7 @@ async function officialEstimate(request) {
       unit: definition.unit,
     }],
     warnings,
-    method_note: `Official FIADB-API fullreport estimate using attribute ${definition.snum} and evaluation group ${STATE_FIPS[state]}${year}.`,
+    method_note: `Official FIADB-API fullreport estimate using attribute ${definition.snum}, evaluation group ${STATE_FIPS[state]}${year}${countyFips ? `, and county filter ${countyFips}` : ""}.`,
     data_source: "USDA Forest Service FIA FIADB-API / EVALIDator",
     source_mode: "live",
     evaluation_year: year,

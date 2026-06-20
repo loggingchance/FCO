@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ChevronDown, Play } from "lucide-react";
+import { AlertTriangle, Play } from "lucide-react";
 import { EstimateChart } from "../components/EstimateChart";
 import { ExportButtons } from "../components/ExportButtons";
 import { MapPanel } from "../components/MapPanel";
@@ -67,10 +67,8 @@ export function Explore() {
   const [county, setCounty] = useState("");
   const [geoType, setGeoType] = useState<"state" | "county">("state");
   const [estimateType, setEstimateType] = useState("total_carbon");
-  const [grouping, setGrouping] = useState("state");
   const [evaluationYear, setEvaluationYear] = useState(2023);
   const [liveData, setLiveData] = useState(true);
-  const [advanced, setAdvanced] = useState(false);
   const [result, setResult] = useState<EstimateResponse | null>(null);
 
   useEffect(() => {
@@ -97,10 +95,10 @@ export function Explore() {
     const payload: EstimateRequest = {
       geography: { type: geoType, states: [state], counties: geoType === "county" ? [county] : [] },
       estimate_type: estimateType,
-      grouping,
+      grouping: geoType,
       evaluation_year: evaluationYear,
       live_data: liveData,
-      filters: advanced ? { ownership_group: "All ownerships", stand_size_class: "All stand sizes" } : {},
+      filters: {},
     };
     try {
       setResult(await api.estimate(payload));
@@ -146,12 +144,6 @@ export function Explore() {
             </select>
           </label>
           <label>
-            Group results by
-            <select value={grouping} onChange={(e) => setGrouping(e.target.value)}>
-              {["county", "state", "carbon_pool", "forest_type_group", "ownership_group", "stand_size_class", "age_class", "reserved_status"].map((item) => <option key={item} value={item}>{item.replaceAll("_", " ")}</option>)}
-            </select>
-          </label>
-          <label>
             FIA evaluation year
             <select value={evaluationYear} onChange={(e) => setEvaluationYear(Number(e.target.value))}>
               {[2024, 2023, 2022, 2021, 2020].map((year) => <option key={year} value={year}>{year}</option>)}
@@ -165,20 +157,9 @@ export function Explore() {
           </label>
           <p>Uses the USDA Forest Service FIA service when the selected geography, estimate, grouping, and year are supported.</p>
         </div>
-        <div className="form-actions">
-          <button className="link-button advanced-toggle" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>
-            {advanced ? "Hide advanced filters" : "Advanced filters"}<ChevronDown size={16} className={advanced ? "open" : ""} />
-          </button>
+        <div className="form-actions form-actions-end">
           <button className="primary" onClick={generate}><Play size={17} /> Generate Results</button>
         </div>
-        {advanced && (
-          <div className="filter-row">
-            <span>Forest type group: All</span>
-            <span>Ownership group: All</span>
-            <span>Stand-size class: All</span>
-            <span>Reserved status: All</span>
-          </div>
-        )}
       </section>
       {result && (
         <>
