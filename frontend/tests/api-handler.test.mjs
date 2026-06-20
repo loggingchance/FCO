@@ -110,6 +110,34 @@ test("every estimate type produces a normalized official result", async (context
   }
 });
 
+test("valid FIADB JSON is accepted even when its content-type header is incorrect", async (context) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const isArea = new URL(String(url)).searchParams.get("snum") === "2";
+    return {
+      ok: true,
+      headers: { get: () => "text/html; charset=utf-8" },
+      json: async () => ({ estimates: [{ ROW: "001 Test County", ESTIMATE: isArea ? 500_000 : 900_000_000, SE: 20_000_000, SE_PERCENT: 2.2, PLOT_COUNT: 90 }] }),
+    };
+  };
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await call({
+    method: "POST",
+    url: "/api/estimate",
+    body: {
+      geography: { type: "state", states: ["UT"], counties: [] },
+      estimate_type: "growing_stock_volume",
+      grouping: "county",
+      evaluation_year: 2023,
+      filters: {},
+      live_data: true,
+    },
+  });
+  assert.equal(response.code, 200, JSON.stringify(response.body));
+  assert.equal(response.body.rows[0].label, "Test County");
+});
+
 test("every FIA row grouping preserves separate result rows", async (context) => {
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url) => fiaResponse(url);

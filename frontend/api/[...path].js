@@ -165,9 +165,12 @@ async function fiaRecords(state, year, definition, countyFips = null, rowGroupin
       signal: controller.signal,
     });
     if (!response.ok) throw new Error(`FIADB returned HTTP ${response.status}`);
-    const contentType = response.headers.get("content-type") || "";
-    if (!contentType.toLowerCase().includes("json")) throw new Error("FIADB did not return JSON");
-    const payload = await response.json();
+    let payload;
+    try {
+      payload = await response.json();
+    } catch {
+      throw new Error("FIADB returned an unreadable response instead of estimate data");
+    }
     const records = payload?.estimates || [];
     if (!records.length) throw new Error("FIADB returned no estimates");
     return records;
