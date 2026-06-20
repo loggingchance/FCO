@@ -114,6 +114,8 @@ select { width: 100%; border: 1px solid var(--line); border-radius: 7px; backgro
 .official-data-option { margin-top: 14px; }
 .official-data-option .toggle-row { margin: 0; }
 .official-data-option p { max-width: 700px; margin: 5px 0 0 27px; color: var(--muted); font-size: .84rem; }
+.official-data-note { display: flex; flex-wrap: wrap; gap: 5px 12px; margin: 16px 0 0; color: var(--muted); }
+.official-data-note strong { color: var(--green); }
 .filter-row span { background: #eef4ea; border: 1px solid var(--line); border-radius: 999px; padding: 7px 10px; }
 .result-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
 .result-cards article { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
@@ -135,8 +137,11 @@ select { width: 100%; border: 1px solid var(--line); border-radius: 7px; backgro
 .map-panel figcaption strong { color: var(--ink); }
 .map-panel figcaption span { color: var(--muted); font-size: .86rem; }
 table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+.table-scroll { width: 100%; overflow-x: auto; }
+.table-scroll table { min-width: 760px; }
 th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 10px; }
 th { color: var(--muted); font-size: .9rem; }
+.table-unit { display: block; margin-top: 3px; color: var(--muted); font-size: .7rem; }
 .dual-unit-value strong, .dual-unit-value span { display: block; }
 .dual-unit-value span { color: var(--muted); font-size: .72rem; }
 .dual-unit-value strong:nth-of-type(2) { margin-top: 5px; color: var(--blue); }
@@ -160,6 +165,7 @@ th { color: var(--muted); font-size: .9rem; }
 .report-preview { margin-top: 22px; }
 .report-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 10px; margin: 18px 0; }
 .report-columns span { background: #eef4ea; border: 1px solid var(--line); border-radius: 7px; padding: 12px; font-weight: 800; }
+.report-columns small { display: block; margin-top: 5px; color: var(--blue); font-weight: 600; }
 .source-list, dl, .module-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 dt { font-weight: 800; color: var(--green); }
 dd { margin: 5px 0 18px; color: var(--muted); }
@@ -210,5 +216,7 @@ dd { margin: 5px 0 18px; color: var(--muted); }
   .map-panel { min-height: 230px; }
   .map-panel svg { height: 180px; }
   table { font-size: .72rem; }
+  .table-scroll { overflow: visible; }
+  .table-scroll table { min-width: 0; }
   th, td { padding: 6px; }
 }

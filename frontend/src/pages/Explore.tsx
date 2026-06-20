@@ -6,6 +6,7 @@ import { MapPanel } from "../components/MapPanel";
 import { api } from "../services/api";
 import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
 import { alternateCarbon, formatEstimate, formatPerAcreEstimate, formatTotalEstimate } from "../utils/units";
+import { saveLastResult } from "../utils/results";
 import { COUNTIES, STATES } from "../../shared/counties.js";
 import { ADVANCED_FILTERS } from "../../shared/fiaOptions.js";
 
@@ -24,28 +25,6 @@ const fallbackEstimateTypes = [
   { id: "soil_organic_carbon", label: "Soil organic carbon", unit: "metric tonnes carbon" },
 ];
 
-const estimateSamples: Record<string, { label: string; unit: string; value: (sample: { area: number; carbon: number }) => number }> = {
-  forest_area: { label: "Forest area", unit: "acres", value: (sample) => sample.area },
-  total_carbon: { label: "Total forest carbon", unit: "metric tonnes carbon", value: (sample) => sample.carbon },
-  growing_stock_volume: { label: "Growing-stock volume", unit: "cubic feet", value: (sample) => sample.area * 1420 },
-  live_tree_carbon: { label: "Live tree carbon", unit: "short tons carbon", value: (sample) => sample.carbon * .54 * 1.10231131 },
-  standing_dead_carbon: { label: "Standing dead tree carbon", unit: "short tons carbon", value: (sample) => sample.carbon * .04 * 1.10231131 },
-  live_aboveground_carbon: { label: "Live aboveground carbon", unit: "metric tonnes carbon", value: (sample) => sample.carbon * .46 },
-  live_belowground_carbon: { label: "Live belowground carbon", unit: "metric tonnes carbon", value: (sample) => sample.carbon * .08 },
-  dead_wood_carbon: { label: "Dead wood carbon", unit: "metric tonnes carbon", value: (sample) => sample.carbon * .08 },
-  litter_carbon: { label: "Litter carbon", unit: "metric tonnes carbon", value: (sample) => sample.carbon * .07 },
-  soil_organic_carbon: { label: "Soil organic carbon", unit: "metric tonnes carbon", value: (sample) => sample.carbon * .31 },
-};
-
-const sampleByState: Record<string, { area: number; carbon: number; se: number }> = {
-  WI: { area: 17_100_000, carbon: 1_280_000_000, se: 4.8 },
-  MI: { area: 20_900_000, carbon: 1_630_000_000, se: 4.2 },
-  MN: { area: 15_900_000, carbon: 1_120_000_000, se: 5.1 },
-  NY: { area: 18_600_000, carbon: 1_410_000_000, se: 4.6 },
-  VT: { area: 4_500_000, carbon: 355_000_000, se: 6.3 },
-  ME: { area: 17_600_000, carbon: 1_360_000_000, se: 4.4 },
-};
-
 const GROUPING_LABELS: Record<string, string> = {
   state: "State total",
   county: "County",
@@ -56,48 +35,6 @@ const GROUPING_LABELS: Record<string, string> = {
   reserved_status: "Reserved status",
   carbon_pool: "Carbon pool",
 };
-
-function browserFallback(request: EstimateRequest): EstimateResponse {
-  if (request.grouping !== request.geography.type && request.grouping !== "carbon_pool") {
-    throw new Error("Illustrative data does not support the requested grouping.");
-  }
-  const stateCode = request.geography.states[0] || "WI";
-  const sample = sampleByState[stateCode] || sampleByState.WI;
-  const stateName = fallbackStates.find((item) => item.code === stateCode)?.name || stateCode;
-  const estimate = estimateSamples[request.estimate_type] || estimateSamples.total_carbon;
-  const isArea = request.estimate_type === "forest_area";
-  const value = estimate.value(sample);
-  const unit = estimate.unit;
-  const perAcre = isArea ? 1 : value / sample.area;
-  const poolRows = [
-    ["Live aboveground", .46], ["Live belowground", .08], ["Dead wood", .08], ["Litter", .07], ["Soil organic", .31],
-  ].map(([label, share]) => ({
-    label: String(label), total: sample.carbon * Number(share), per_acre: sample.carbon * Number(share) / sample.area,
-    area_acres: sample.area, standard_error: sample.carbon * Number(share) * sample.se / 100,
-    sampling_error_percent: sample.se, plot_count: null, unit,
-  }));
-
-  return {
-    request,
-    headline: { label: estimate.label, value, unit, per_acre: perAcre },
-    rows: request.grouping === "carbon_pool" ? poolRows : [{
-      label: stateName,
-      total: value,
-      per_acre: perAcre,
-      area_acres: sample.area,
-      standard_error: value * sample.se / 100,
-      sampling_error_percent: sample.se,
-      plot_count: null,
-      unit,
-    }],
-    warnings: ["Illustrative sample data. Do not cite as an official FIA estimate."],
-    method_note: "Illustrative state-level values are shown when the live FIA service cannot complete the request.",
-    data_source: "FCO illustrative sample data",
-    source_mode: "mock_fallback",
-    evaluation_year: request.evaluation_year || null,
-    generated_at: new Date().toISOString(),
-  };
-}
 
 export function Explore() {
   const [states, setStates] = useState<StateOption[]>([]);
@@ -110,7 +47,6 @@ export function Explore() {
   const [grouping, setGrouping] = useState("state");
   const [evaluationYear, setEvaluationYear] = useState(2023);
   const [evaluationYears, setEvaluationYears] = useState([2023, 2022, 2021, 2020]);
-  const [liveData, setLiveData] = useState(true);
   const [advanced, setAdvanced] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [result, setResult] = useState<EstimateResponse | null>(null);
@@ -175,25 +111,19 @@ export function Explore() {
       estimate_type: estimateType,
       grouping,
       evaluation_year: evaluationYear,
-      live_data: liveData,
+      live_data: true,
       filters: advanced ? Object.fromEntries(Object.entries(filters).filter(([, value]) => value)) : {},
     };
     setLoading(true);
     setRequestError("");
     try {
-      setResult(await api.estimate(payload));
+      const nextResult = await api.estimate(payload);
+      setResult(nextResult);
+      saveLastResult(nextResult);
     } catch (error) {
-      if (liveData) {
-        setResult(null);
-        setRequestError(`The official FIA request could not be completed. ${error instanceof Error ? error.message : "Please try again."} No illustrative substitute was created.`);
-      } else {
-        try {
-          setResult(browserFallback(payload));
-        } catch (fallbackError) {
-          setResult(null);
-          setRequestError(fallbackError instanceof Error ? fallbackError.message : "Illustrative result unavailable.");
-        }
-      }
+      setResult(null);
+      const detail = error instanceof Error ? error.message.replace(/[.\s]+$/, "") : "Please try again";
+      setRequestError(`The official FIA request could not be completed: ${detail}.`);
     } finally {
       setLoading(false);
     }
@@ -248,13 +178,7 @@ export function Explore() {
             </select>
           </label>
         </div>
-        <div className="official-data-option">
-          <label className="toggle-row">
-            <input type="checkbox" checked={liveData} onChange={(e) => setLiveData(e.target.checked)} />
-            Request official FIA/EVALIDator data
-          </label>
-          <p>Uses the USDA Forest Service FIA service when the selected geography, estimate, grouping, and year are supported.</p>
-        </div>
+        <p className="official-data-note"><strong>Official FIA/EVALIDator data</strong><span>Results are requested directly from the USDA Forest Service FIA service.</span></p>
         <div className="form-actions">
           <button className="link-button advanced-toggle" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>
             {advanced ? "Hide advanced filters" : "Advanced filters"}<ChevronDown size={16} className={advanced ? "open" : ""} />
@@ -302,7 +226,7 @@ export function Explore() {
             <h2>Table and exports</h2>
             <p className="result-context"><strong>Grouped by:</strong> {GROUPING_LABELS[result.request.grouping || result.request.geography.type] || result.request.grouping} <span>FIA evaluation year: {result.evaluation_year || "N/A"}</span></p>
             <div className="warnings">{result.warnings.map((warning) => <p key={warning}><AlertTriangle size={16} /> {warning}</p>)}</div>
-            <table>
+            <div className="table-scroll"><table>
               <thead><tr><th>Place</th><th>Total</th><th>Per acre</th><th>Area (acres)</th><th>Standard error</th><th>Sampling error (%)</th><th>Plots (count)</th></tr></thead>
               <tbody>{result.rows.map((row) => <tr key={row.label}>
                 <td>{row.label}</td>
@@ -312,7 +236,7 @@ export function Explore() {
                 <td className="dual-unit-value">{row.standard_error == null ? "N/A" : <><strong>{formatTotalEstimate(row.standard_error, row.unit)}</strong><span>{row.unit}</span>{alternateCarbon(row.standard_error, row.unit) && <><strong>{formatTotalEstimate(alternateCarbon(row.standard_error, row.unit)!.value, alternateCarbon(row.standard_error, row.unit)!.unit)}</strong><span>{alternateCarbon(row.standard_error, row.unit)!.unit}</span></>}</>}</td>
                 <td>{row.sampling_error_percent == null ? "N/A" : `${row.sampling_error_percent}%`}</td><td>{row.plot_count ?? "N/A"}</td>
               </tr>)}</tbody>
-            </table>
+            </table></div>
             <p className="method-note">{result.method_note}</p>
             <ExportButtons result={result} />
           </section>

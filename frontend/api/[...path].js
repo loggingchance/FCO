@@ -51,7 +51,17 @@ export const config = { maxDuration: 60 };
 
 function routePath(request) {
   const value = request.query?.path;
-  return (Array.isArray(value) ? value : [value]).filter(Boolean).join("/");
+  const parameterPath = (Array.isArray(value) ? value : [value]).filter(Boolean).join("/");
+  if (parameterPath) return parameterPath;
+
+  const pathname = new URL(request.url || "/", "http://localhost").pathname;
+  return pathname.replace(/^\/api\/?/, "").replace(/^\/+|\/+$/g, "");
+}
+
+function queryParameter(request, name) {
+  const value = request.query?.[name];
+  if (value !== undefined && value !== null) return Array.isArray(value) ? value[0] : value;
+  return new URL(request.url || "/", "http://localhost").searchParams.get(name) || "";
 }
 
 function numberValue(record, key) {
@@ -236,13 +246,13 @@ export default async function handler(request, response) {
   if (request.method === "GET" && path === "health") return response.status(200).json({ status: "ok", app: "FCO - Forest Carbon Online" });
   if (request.method === "GET" && path === "geographies/states") return response.status(200).json(STATES);
   if (request.method === "GET" && path === "geographies/counties") {
-    const state = String(request.query?.state || "");
+    const state = String(queryParameter(request, "state"));
     return response.status(200).json(state ? COUNTIES.filter((county) => county.state === state) : COUNTIES);
   }
   if (request.method === "GET" && path === "options/estimate-types") return response.status(200).json(ESTIMATE_TYPES);
   if (request.method === "GET" && path === "options/evaluation-years") {
     try {
-      return response.status(200).json(await evaluationYears(String(request.query?.state || "")));
+      return response.status(200).json(await evaluationYears(String(queryParameter(request, "state"))));
     } catch (error) {
       return response.status(502).json({ detail: error instanceof Error ? error.message : "Evaluation years unavailable" });
     }

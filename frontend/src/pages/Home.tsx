@@ -32,7 +32,7 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
           <button className="primary" onClick={() => setPage("explore")}>Choose a Place <ArrowRight size={17} /></button>
         </div>
         <div className="home-secondary-actions">
-          <button onClick={() => setPage("reports")}><FileText size={17} /> Sample Report</button>
+          <button onClick={() => setPage("reports")}><FileText size={17} /> Latest Report</button>
           <button onClick={() => setPage("history")}><History size={17} /> History</button>
           <button onClick={() => setPage("methodology")}><Search size={17} /> Method</button>
         </div>

@@ -21,7 +21,7 @@ function App() {
     home: <Home setPage={setPage} />,
     explore: <Explore />,
     compare: <Compare />,
-    reports: <Reports />,
+    reports: <Reports setPage={setPage} />,
     methodology: <Methodology />,
     history: <History />,
     about: <About />,
