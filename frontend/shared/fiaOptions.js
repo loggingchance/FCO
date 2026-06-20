@@ -1,0 +1,47 @@
+export const ADVANCED_FILTERS = {
+  forest_type_group: {
+    label: "Forest type group",
+    options: [
+      ["", "All forest type groups"],
+      ["100:119", "White / red / jack pine"],
+      ["120:139", "Spruce / fir"],
+      ["140:159", "Longleaf / slash pine"],
+      ["160:179", "Loblolly / shortleaf pine"],
+      ["180:199", "Pinyon / juniper"],
+      ["200:219", "Douglas-fir"],
+      ["220:239", "Ponderosa pine"],
+      ["240:259", "Western white pine"],
+      ["260:279", "Fir / spruce / mountain hemlock"],
+      ["280:299", "Lodgepole pine"],
+      ["300:319", "Hemlock / Sitka spruce"],
+      ["320:339", "Western larch"],
+      ["340:359", "Redwood"],
+      ["360:369", "Other western softwoods"],
+      ["370:379", "California mixed conifer"],
+      ["380:399", "Exotic or nonstocked softwoods"],
+      ["400:499", "Oak / pine"],
+      ["500:599", "Oak / hickory"],
+      ["600:699", "Oak / gum / cypress"],
+      ["700:799", "Elm / ash / cottonwood"],
+      ["800:899", "Maple / beech / birch"],
+      ["900:919", "Aspen / birch"],
+      ["920:939", "Western oak"],
+      ["940:959", "Tanoak / laurel and other western hardwoods"],
+      ["960:989", "Tropical or exotic hardwoods"],
+      ["990:999", "Nonstocked hardwood"],
+    ],
+  },
+  ownership_group: {
+    label: "Ownership group",
+    options: [["", "All ownerships"], ["10", "USDA Forest Service"], ["20", "Other federal"], ["30", "State and local government"], ["40", "Private"]],
+  },
+  stand_size_class: {
+    label: "Stand-size class",
+    options: [["", "All stand sizes"], ["1", "Large diameter"], ["2", "Medium diameter"], ["3", "Small diameter"], ["5", "Nonstocked"]],
+  },
+  reserved_status: {
+    label: "Reserved status",
+    options: [["", "All reserved statuses"], ["0", "Not reserved"], ["1", "Reserved"]],
+  },
+};
+

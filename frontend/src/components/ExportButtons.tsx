@@ -1,10 +1,14 @@
 import { Download, FileDown, Printer } from "lucide-react";
 import type { EstimateResponse } from "../types";
+import { alternateCarbon, isCarbonUnit } from "../utils/units";
 
 function toCsv(result: EstimateResponse) {
-  const header = ["label", "total", "per_acre", "area_acres", "sampling_error_percent", "plot_count", "unit"];
+  const carbon = isCarbonUnit(result.headline.unit);
+  const alternate = alternateCarbon(1, result.headline.unit);
+  const suffix = alternate?.unit.startsWith("short") ? "short_tons_carbon" : "metric_tonnes_carbon";
+  const header = ["label", "total", "per_acre", "area_acres", "sampling_error_percent", "plot_count", "unit", ...(carbon ? [`total_${suffix}`, `per_acre_${suffix}`] : [])];
   const lines = result.rows.map((row) =>
-    [row.label, row.total, row.per_acre, row.area_acres, row.sampling_error_percent ?? "", row.plot_count ?? "", row.unit].join(","),
+    [row.label, row.total, row.per_acre, row.area_acres, row.sampling_error_percent ?? "", row.plot_count ?? "", row.unit, ...(carbon ? [alternateCarbon(row.total, row.unit)!.value, alternateCarbon(row.per_acre, row.unit)!.value] : [])].join(","),
   );
   return [header.join(","), ...lines].join("\n");
 }
@@ -30,11 +34,12 @@ function escapeHtml(value: string) {
 }
 
 function toHtml(result: EstimateResponse) {
+  const carbon = isCarbonUnit(result.headline.unit);
   const rows = result.rows.map((row) => `
     <tr>
       <td>${escapeHtml(row.label)}</td>
-      <td>${row.total.toLocaleString()}</td>
-      <td>${row.per_acre.toLocaleString()}</td>
+      <td>${row.total.toLocaleString()} ${escapeHtml(row.unit)}${carbon ? `<br>${alternateCarbon(row.total, row.unit)!.value.toLocaleString()} ${alternateCarbon(row.total, row.unit)!.unit}` : ""}</td>
+      <td>${row.per_acre.toLocaleString()} ${escapeHtml(row.unit)}/acre${carbon ? `<br>${alternateCarbon(row.per_acre, row.unit)!.value.toLocaleString()} ${alternateCarbon(row.per_acre, row.unit)!.unit}/acre` : ""}</td>
       <td>${row.area_acres.toLocaleString()}</td>
       <td>${row.sampling_error_percent ?? "N/A"}</td>
     </tr>`).join("");
@@ -50,8 +55,10 @@ th,td{padding:9px;text-align:left;border-bottom:1px solid #d9e0d7}.warning{color
 <h1>FCO Forest Carbon Report</h1><p><em>The COLE Tribute App</em></p>
 <h2>${escapeHtml(result.headline.label)}</h2>
 <p><strong>${result.headline.value.toLocaleString()} ${escapeHtml(result.headline.unit)}</strong></p>
+ ${carbon ? `<p><strong>${alternateCarbon(result.headline.value, result.headline.unit)!.value.toLocaleString()} ${alternateCarbon(result.headline.value, result.headline.unit)!.unit}</strong></p>` : ""}
 <p>Per acre: ${result.headline.per_acre.toLocaleString()} ${escapeHtml(result.headline.unit)}/acre</p>
-<table><thead><tr><th>Place</th><th>Total (${escapeHtml(result.headline.unit)})</th><th>Per acre (${escapeHtml(result.headline.unit)}/acre)</th><th>Area (acres)</th><th>Sampling error (%)</th></tr></thead><tbody>${rows}</tbody></table>
+${carbon ? `<p>Per acre: ${alternateCarbon(result.headline.per_acre, result.headline.unit)!.value.toLocaleString()} ${alternateCarbon(result.headline.per_acre, result.headline.unit)!.unit}/acre</p>` : ""}
+<table><thead><tr><th>Place</th><th>Total</th><th>Per acre</th><th>Area (acres)</th><th>Sampling error (%)</th></tr></thead><tbody>${rows}</tbody></table>
 <h2>Method and data source</h2><p>${escapeHtml(result.method_note)}</p><p>${escapeHtml(result.data_source)}</p>
 <h2>Important notes</h2><ul class="warning">${warnings}</ul>
 </body></html>`;

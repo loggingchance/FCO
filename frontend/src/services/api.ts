@@ -25,6 +25,7 @@ export const api = {
   states: () => getJson<StateOption[]>("/api/geographies/states"),
   counties: (state: string) => getJson<CountyOption[]>(`/api/geographies/counties?state=${encodeURIComponent(state)}`),
   estimateTypes: () => getJson<{ id: string; label: string; unit: string }[]>("/api/options/estimate-types"),
+  evaluationYears: (state: string) => getJson<number[]>(`/api/options/evaluation-years?state=${encodeURIComponent(state)}`),
   estimate: (payload: EstimateRequest) => postJson<EstimateResponse>("/api/estimate", payload),
   reportUrl: (format: "html" | "pdf") => `${API_BASE}/api/report?format=${format}`,
 };
