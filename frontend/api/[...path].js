@@ -64,6 +64,92 @@ function queryParameter(request, name) {
   return new URL(request.url || "/", "http://localhost").searchParams.get(name) || "";
 }
 
+const USAGE_EVENTS = new Set([
+  "page_view", "estimate_generated", "estimate_failed", "comparison_generated",
+  "comparison_failed", "export_created", "feedback_opened",
+]);
+
+function usageWeekKey(date = new Date()) {
+  const target = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const day = target.getUTCDay() || 7;
+  target.setUTCDate(target.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(target.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((target - yearStart) / 86400000) + 1) / 7);
+  return `${target.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
+}
+
+function cleanUsageValue(value) {
+  return String(value ?? "")
+    .replace(/[^a-zA-Z0-9 _.-]/g, "")
+    .trim()
+    .slice(0, 80) || "unknown";
+}
+
+async function redisCommand(command) {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL || process.env.STORAGE_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN || process.env.STORAGE_TOKEN;
+  if (!url || !token) return null;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(command),
+  });
+  if (!response.ok) throw new Error(`Usage store returned HTTP ${response.status}`);
+  return response.json();
+}
+
+async function recordUsage(body = {}) {
+  const event = cleanUsageValue(body.event);
+  if (!USAGE_EVENTS.has(event)) return;
+  const dimensions = body.dimensions && typeof body.dimensions === "object" ? body.dimensions : {};
+  const allowedDimensions = ["page", "state", "geography", "estimate", "grouping", "year", "format"];
+  const detail = allowedDimensions
+    .filter((key) => dimensions[key] !== undefined && dimensions[key] !== "")
+    .map((key) => `${key}=${cleanUsageValue(dimensions[key])}`)
+    .join("|");
+  const key = `fco:usage:${usageWeekKey()}`;
+  await redisCommand(["HINCRBY", key, `event:${event}`, 1]);
+  if (detail) await redisCommand(["HINCRBY", key, `detail:${event}|${detail}`, 1]);
+}
+
+function escapeReportHtml(value) {
+  return String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[character]);
+}
+
+async function sendWeeklyUsageReport() {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || process.env.STORAGE_REST_API_URL || process.env.STORAGE_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || process.env.STORAGE_REST_API_TOKEN || process.env.STORAGE_TOKEN;
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!redisUrl || !redisToken || !resendKey) throw new Error("Weekly reporting environment variables are incomplete");
+
+  const reportWeek = usageWeekKey(new Date(Date.now() - 3 * 86400000));
+  const stored = await redisCommand(["HGETALL", `fco:usage:${reportWeek}`]);
+  const values = stored?.result || [];
+  const entries = [];
+  for (let index = 0; index < values.length; index += 2) entries.push([String(values[index]), Number(values[index + 1]) || 0]);
+  const summary = entries.filter(([key]) => key.startsWith("event:")).sort((a, b) => b[1] - a[1]);
+  const details = entries.filter(([key]) => key.startsWith("detail:")).sort((a, b) => b[1] - a[1]).slice(0, 40);
+  const total = summary.reduce((sum, [, count]) => sum + count, 0);
+  const rows = (items) => items.length
+    ? items.map(([label, count]) => `<tr><td>${escapeReportHtml(label.replace(/^(event|detail):/, "").replaceAll("|", " / "))}</td><td style="text-align:right">${count}</td></tr>`).join("")
+    : '<tr><td colspan="2">No activity recorded.</td></tr>';
+  const html = `<!doctype html><html><body style="font:15px/1.45 Arial,sans-serif;color:#18211b;max-width:760px;margin:auto"><h1 style="color:#245b3b">FCO weekly usage report</h1><p><strong>Week:</strong> ${reportWeek}<br><strong>Total recorded actions:</strong> ${total}</p><h2>Activity summary</h2><table style="width:100%;border-collapse:collapse">${rows(summary)}</table><h2>Top usage details</h2><table style="width:100%;border-collapse:collapse">${rows(details)}</table><p style="color:#5d6b61">Privacy note: FCO records aggregate product events only. It does not store cookies, user identities, or IP addresses in the usage report.</p></body></html>`;
+  const text = [`FCO weekly usage report - ${reportWeek}`, `Total recorded actions: ${total}`, "", ...summary.map(([label, count]) => `${label.replace("event:", "")}: ${count}`), "", ...details.map(([label, count]) => `${label.replace("detail:", "")}: ${count}`)].join("\n");
+  const emailResponse = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${resendKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.FCO_REPORT_FROM || "FCO Reports <onboarding@resend.dev>",
+      to: [process.env.FCO_REPORT_EMAIL || "steve@northeastforests.com"],
+      subject: `FCO weekly usage report - ${reportWeek}`,
+      html,
+      text,
+    }),
+  });
+  if (!emailResponse.ok) throw new Error(`Email service returned HTTP ${emailResponse.status}`);
+  return { status: "sent", week: reportWeek, total };
+}
+
 function numberValue(record, key) {
   const value = record?.[key];
   if (value === null || value === undefined || value === "" || value === "--") return 0;
@@ -117,7 +203,7 @@ function recordKey(record, index) {
 
 function groupLabel(record, fallback) {
   const raw = String(record?.ROW ?? record?.ROW_NAME ?? record?.RNAME ?? record?.GRP2 ?? record?.GRP1 ?? "").replace(/^`/, "").trim();
-  return raw ? raw.replace(/^\d+\s+/, "") : fallback;
+  return raw ? raw.replace(/^[`'"]+/, "").replace(/^\d+\s+(?:[A-Z]{2}\s+)?/, "") : fallback;
 }
 
 function filterExpression(countyFips, filters = {}) {
@@ -294,6 +380,24 @@ export default async function handler(request, response) {
       return response.status(200).json(await officialEstimate(request.body));
     } catch (error) {
       return response.status(502).json({ detail: error instanceof Error ? error.message : "Official FIA request failed" });
+    }
+  }
+  if (request.method === "POST" && path === "analytics/event") {
+    try {
+      await recordUsage(request.body);
+    } catch {
+      // Analytics must never interrupt the user's work.
+    }
+    return response.status(204).end();
+  }
+  if (request.method === "GET" && path === "analytics/weekly-report") {
+    const expected = process.env.CRON_SECRET;
+    const authorization = request.headers?.authorization || "";
+    if (!expected || authorization !== `Bearer ${expected}`) return response.status(401).json({ detail: "Unauthorized" });
+    try {
+      return response.status(200).json(await sendWeeklyUsageReport());
+    } catch (error) {
+      return response.status(500).json({ detail: error instanceof Error ? error.message : "Weekly report failed" });
     }
   }
 

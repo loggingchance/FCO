@@ -50,3 +50,12 @@ export function roundPerAcreEstimate(value: number, unit: string) {
 export function formatPercent(value: number) {
   return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}%`;
 }
+
+export function formatCompactEstimate(value: number, maximumFractionDigits = 2) {
+  if (Math.abs(value) < 1_000_000) return formatEstimate(value, maximumFractionDigits);
+  return value.toLocaleString(undefined, {
+    notation: "compact",
+    compactDisplay: "short",
+    maximumFractionDigits,
+  });
+}

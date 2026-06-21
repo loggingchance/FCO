@@ -1,0 +1,9 @@
+{
+  "name": "Forest Carbon Online",
+  "short_name": "FCO",
+  "description": "Explore USDA Forest Service FIA forest carbon estimates for U.S. states and counties.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f2",
+  "theme_color": "#1f603f"
+}

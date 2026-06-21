@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fco.forestenterprise.org/sitemap.xml

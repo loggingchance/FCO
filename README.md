@@ -12,6 +12,7 @@ This repository contains the focused public FCO explorer:
 - Scale and reliability guardrails.
 - Public pages for methods, history, limitations, data sources, glossary, and reports.
 - PDF/HTML report generation shell.
+- Anonymous aggregate product analytics with a scheduled weekly email report.
 
 ## Non-affiliation notice
 
@@ -64,6 +65,8 @@ FIA_API_BASE_URL=https://apps.fs.usda.gov/fiadb-api
 FIA_DEFAULT_EVALUATION_YEAR=2023
 FIA_TIMEOUT_SECONDS=4
 ```
+
+Weekly aggregate usage reporting requires Upstash Redis, Resend, and Vercel Cron environment variables. Setup instructions are in `docs/WEEKLY_USAGE_REPORT.md`.
 
 ## Build phases represented here
 

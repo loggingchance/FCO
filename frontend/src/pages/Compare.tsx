@@ -7,6 +7,7 @@ import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } fro
 import { COUNTIES, STATES } from "../../shared/counties.js";
 import { alternateCarbon, formatPerAcreEstimate, formatPercent, formatTotalEstimate } from "../utils/units";
 import { saveLastResult } from "../utils/results";
+import { trackUsage } from "../services/analytics";
 
 const DEFAULT_ESTIMATES = [
   { id: "forest_area", label: "Forest area", unit: "acres" },
@@ -116,8 +117,10 @@ export function Compare() {
       };
       setResult(combined);
       saveLastResult(combined);
+      trackUsage("comparison_generated", { state: geography === "state" ? `${stateA}-${stateB}` : countyState, geography, estimate: estimateType, year });
     } catch (caught) {
       setError(`The official FIA comparison could not be completed: ${caught instanceof Error ? caught.message : "Please try again"}.`);
+      trackUsage("comparison_failed", { state: geography === "state" ? `${stateA}-${stateB}` : countyState, geography, estimate: estimateType, year });
     } finally {
       setLoading(false);
     }

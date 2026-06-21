@@ -5,8 +5,9 @@ import { ExportButtons } from "../components/ExportButtons";
 import { MapPanel } from "../components/MapPanel";
 import { api } from "../services/api";
 import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
-import { alternateCarbon, formatEstimate, formatPerAcreEstimate, formatPercent, formatTotalEstimate } from "../utils/units";
+import { alternateCarbon, formatCompactEstimate, formatEstimate, formatPerAcreEstimate, formatPercent, formatTotalEstimate } from "../utils/units";
 import { saveLastResult } from "../utils/results";
+import { trackUsage } from "../services/analytics";
 import { COUNTIES, STATES } from "../../shared/counties.js";
 import { ADVANCED_FILTERS } from "../../shared/fiaOptions.js";
 
@@ -136,10 +137,12 @@ export function Explore() {
       const nextResult = await api.estimate(payload);
       setResult(nextResult);
       saveLastResult(nextResult);
+      trackUsage("estimate_generated", { state, geography: geoType, estimate: estimateType, grouping, year: evaluationYear });
     } catch (error) {
       setResult(null);
       const detail = error instanceof Error ? error.message.replace(/[.\s]+$/, "") : "Please try again";
       setRequestError(`The official FIA request could not be completed: ${detail}.`);
+      trackUsage("estimate_failed", { state, geography: geoType, estimate: estimateType, grouping, year: evaluationYear });
     } finally {
       setLoading(false);
     }
@@ -220,8 +223,8 @@ export function Explore() {
         <>
           <section className="result-cards wide">
             <article>
-              <span>{result.headline.label}</span><strong>{formatTotalEstimate(result.headline.value, result.headline.unit)}</strong><em>{result.headline.unit}</em>
-              {alternateCarbon(result.headline.value, result.headline.unit) && <small>{formatTotalEstimate(alternateCarbon(result.headline.value, result.headline.unit)!.value, alternateCarbon(result.headline.value, result.headline.unit)!.unit)} {alternateCarbon(result.headline.value, result.headline.unit)!.unit}</small>}
+              <span>{result.headline.label}</span><strong title={formatTotalEstimate(result.headline.value, result.headline.unit)}>{formatCompactEstimate(result.headline.value)}</strong><em>{result.headline.unit}</em>
+              {alternateCarbon(result.headline.value, result.headline.unit) && <small title={formatTotalEstimate(alternateCarbon(result.headline.value, result.headline.unit)!.value, alternateCarbon(result.headline.value, result.headline.unit)!.unit)}>{formatCompactEstimate(alternateCarbon(result.headline.value, result.headline.unit)!.value)} {alternateCarbon(result.headline.value, result.headline.unit)!.unit}</small>}
             </article>
             <article>
               <span>Per acre</span><strong>{formatPerAcreEstimate(result.headline.per_acre, result.headline.unit)}</strong><em>{result.headline.unit}/acre</em>
@@ -229,12 +232,12 @@ export function Explore() {
             </article>
             <article>
               <span>Standard error</span>
-              <strong>{result.rows.length === 1 && result.rows[0]?.standard_error != null ? formatTotalEstimate(result.rows[0].standard_error, result.rows[0].unit) : "By row"}</strong>
+              <strong title={result.rows.length === 1 && result.rows[0]?.standard_error != null ? formatTotalEstimate(result.rows[0].standard_error, result.rows[0].unit) : undefined}>{result.rows.length === 1 && result.rows[0]?.standard_error != null ? formatCompactEstimate(result.rows[0].standard_error) : "By row"}</strong>
               <em>{result.rows.length === 1 && result.rows[0]?.standard_error != null ? result.rows[0].unit : "See results table"}</em>
-              {result.rows.length === 1 && result.rows[0]?.standard_error != null && alternateCarbon(result.rows[0].standard_error, result.rows[0].unit) && <small>{formatTotalEstimate(alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.value, alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.unit)} {alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.unit}</small>}
+              {result.rows.length === 1 && result.rows[0]?.standard_error != null && alternateCarbon(result.rows[0].standard_error, result.rows[0].unit) && <small title={formatTotalEstimate(alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.value, alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.unit)}>{formatCompactEstimate(alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.value)} {alternateCarbon(result.rows[0].standard_error, result.rows[0].unit)!.unit}</small>}
             </article>
             <article><span>Sampling error</span><strong>{result.rows.length === 1 && result.rows[0]?.sampling_error_percent != null ? formatPercent(result.rows[0].sampling_error_percent) : "By row"}</strong><em>{result.rows.length === 1 ? "FIA estimate" : "See results table"}</em></article>
-            <article><span>Contributing plots</span><strong>{result.rows.length === 1 ? result.rows[0]?.plot_count ?? "N/A" : "By row"}</strong><em>{result.rows.length === 1 ? "FIA plots" : "See results table"}</em></article>
+            <article><span>Contributing plots</span><strong>{result.rows.length === 1 && result.rows[0]?.plot_count != null ? result.rows[0].plot_count.toLocaleString() : result.rows.length === 1 ? "N/A" : "By row"}</strong><em>{result.rows.length === 1 ? "FIA plots" : "See results table"}</em></article>
             <article><span>Data status</span><strong className="status-value">{result.source_mode === "live" ? "Official FIA" : "Illustrative data"}</strong><em>{result.evaluation_year || "sample data"}</em></article>
           </section>
           <section className="panel"><h2>Chart</h2><EstimateChart rows={result.rows} /></section>

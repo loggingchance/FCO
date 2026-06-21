@@ -56,6 +56,11 @@ export function About() {
           Contact: <a href="mailto:steve@northeastforests.com">steve@northeastforests.com</a>
         </p>
 
+        <h2>Privacy and usage reporting</h2>
+        <p>
+          FCO records anonymous, aggregate product events to understand which pages, geographies, estimates, groupings, and exports are being used and where requests fail. It does not place analytics cookies or store names, email addresses, IP addresses, or other user identifiers in its usage reports.
+        </p>
+
         <aside className="support-note" aria-label="Support FCO">
           <Coffee size={24} aria-hidden="true" />
           <div>

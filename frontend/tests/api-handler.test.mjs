@@ -15,6 +15,9 @@ function responseRecorder() {
       this.body = body;
       return body;
     },
+    end() {
+      return this;
+    },
   };
 }
 
@@ -46,6 +49,20 @@ test("deployed URL paths resolve without a catch-all query parameter", async () 
   assert.equal(counties.code, 200);
   assert.ok(states.body.length >= 51);
   assert.ok(counties.body.length > 0);
+});
+
+test("anonymous usage events are accepted without affecting the application", async () => {
+  const response = await call({ method: "POST", url: "/api/analytics/event", body: { event: "page_view", dimensions: { page: "explore" } } });
+  assert.equal(response.code, 204);
+});
+
+test("the weekly report endpoint requires the cron secret", async () => {
+  const previous = process.env.CRON_SECRET;
+  process.env.CRON_SECRET = "test-secret";
+  const response = await call({ method: "GET", url: "/api/analytics/weekly-report" });
+  if (previous === undefined) delete process.env.CRON_SECRET;
+  else process.env.CRON_SECRET = previous;
+  assert.equal(response.code, 401);
 });
 
 test("nested FIA evaluation parameters expose every published state year", async (context) => {
@@ -117,7 +134,7 @@ test("valid FIADB JSON is accepted even when its content-type header is incorrec
     return {
       ok: true,
       headers: { get: () => "text/html; charset=utf-8" },
-      json: async () => ({ estimates: [{ ROW: "001 Test County", ESTIMATE: isArea ? 500_000 : 900_000_000, SE: 20_000_000, SE_PERCENT: 2.2, PLOT_COUNT: 90 }] }),
+      json: async () => ({ estimates: [{ ROW: "'49001 UT Beaver", ESTIMATE: isArea ? 500_000 : 900_000_000, SE: 20_000_000, SE_PERCENT: 2.2, PLOT_COUNT: 90 }] }),
     };
   };
   context.after(() => { globalThis.fetch = originalFetch; });
@@ -135,7 +152,7 @@ test("valid FIADB JSON is accepted even when its content-type header is incorrec
     },
   });
   assert.equal(response.code, 200, JSON.stringify(response.body));
-  assert.equal(response.body.rows[0].label, "Test County");
+  assert.equal(response.body.rows[0].label, "Beaver");
 });
 
 test("every FIA row grouping preserves separate result rows", async (context) => {
