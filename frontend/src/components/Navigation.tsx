@@ -37,6 +37,7 @@ export function Navigation({ page, setPage }: { page: Page; setPage: (page: Page
       <div className="topbar">
         <button className="brand" onClick={() => choose("home")} aria-label="FCO home" title="FCO home">
           <span className="brand-mark">FCO</span>
+          <span className="brand-name">Forest Carbon</span>
         </button>
         <nav className="nav" aria-label="Main navigation">
           {primaryItems.map(([id, label]) => {
@@ -49,8 +50,8 @@ export function Navigation({ page, setPage }: { page: Page; setPage: (page: Page
             );
           })}
           <details className="more-menu" ref={menu}>
-            <summary className={secondaryActive ? "active" : ""}>
-              <span>Learn / More</span><ChevronDown size={16} />
+            <summary className={secondaryActive ? "active" : ""} title="Learn and more">
+              <BookOpen size={17} /><span>Learn / More</span><ChevronDown size={16} />
             </summary>
             <div className="more-menu-panel">
               {secondaryItems.map(([id, label]) => {
