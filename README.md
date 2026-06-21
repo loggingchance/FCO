@@ -9,7 +9,7 @@ FCO is an independent, unofficial, COLE-inspired explorer for broad-area USDA Fo
 - Every displayed estimate must come from a completed FIADB-API `fullreport` request.
 - FCO does not generate modeled, sample, illustrative, or substitute estimates.
 - Failed, unavailable, and unsupported requests return an error without numbers.
-- Evaluation-year choices are taken from FIA's published parameter catalog or confirmed by successful official queries.
+- Evaluation-year choices use FIA's published parameter catalog when available. When that metadata service is unavailable, FCO offers candidate years and displays a result only after the official estimate request succeeds.
 - Results preserve FIA standard error, sampling error, and contributing plot count when supplied.
 - Carbon is displayed primarily in metric tonnes of elemental carbon. The alternate short-ton value is an explicit mass-unit conversion using `1 metric tonne = 1.10231131 short tons`.
 - Elemental carbon is never labeled as CO2e.

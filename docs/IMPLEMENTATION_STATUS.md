@@ -6,7 +6,7 @@
 - Results are returned only after a successful USDA Forest Service FIADB-API request.
 - No sample, mock, modeled, or fallback estimates exist.
 - FIA failures and unsupported combinations return errors without numeric output.
-- FIA evaluation years are discovered from official services rather than invented defaults.
+- FIA evaluation years use the official parameter catalog when available. A catalog outage does not block the app: candidate years remain selectable, but only a successful official estimate request can produce a result.
 - State and county geographies, supported FIADB row groupings, advanced filters, carbon pools, comparisons, and exports use the same official request path.
 - County maps request official boundary geometry from U.S. Census Bureau TIGERweb and display no substitute shape if that service is unavailable.
 - Standard error, sampling error, and contributing plot counts are retained when returned by FIA.

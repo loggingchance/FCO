@@ -189,19 +189,9 @@ async function evaluationYears(state) {
     const published = [...new Set(years.filter((year) => year >= 2000 && year <= 2100))].sort((a, b) => b - a);
     if (published.length) return published;
   } catch {
-    // The parameter catalog is less reliable than the estimate endpoint; probe below.
+    // Year metadata is optional; the estimate request remains the authority.
   }
-
-  const currentYear = new Date().getUTCFullYear();
-  const candidates = Array.from({ length: 8 }, (_, index) => currentYear - index);
-  const checks = await Promise.allSettled(candidates.map(async (year) => {
-    await fiaRecords(state, year, DEFINITIONS.forest_area);
-    return year;
-  }));
-  return checks
-    .filter((check) => check.status === "fulfilled")
-    .map((check) => check.value)
-    .sort((a, b) => b - a);
+  return [];
 }
 
 function recordKey(record, index) {
@@ -309,7 +299,7 @@ async function officialEstimate(request) {
   if (!STATE_FIPS[state] || !["state", "county"].includes(request?.geography?.type)) throw new Error("Live estimates require one listed state or county");
   if (countyFips && (!COUNTIES.some((county) => county.fips === countyFips) || !countyFips.startsWith(STATE_FIPS[state]))) throw new Error("The selected county does not match the selected state");
   if (!definition) throw new Error("This estimate type is not enabled for live FIA requests");
-  if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("Select an FIA-published evaluation year");
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("Select an FIA evaluation year");
   if (!(grouping in GROUPINGS)) throw new Error("This result grouping is not enabled");
   if (grouping === "carbon_pool" && request.estimate_type !== "total_carbon") throw new Error("Carbon-pool grouping requires total forest carbon");
   filterExpression(countyFips, request?.filters);

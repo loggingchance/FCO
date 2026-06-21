@@ -97,24 +97,19 @@ test("nested FIA evaluation parameters expose every published state year", async
   assert.deepEqual(response.body, [2025, 2024, 2023]);
 });
 
-test("recent evaluation groups are probed when FIA's parameter catalog fails", async (context) => {
+test("a failed FIA year catalog returns promptly without issuing estimate probes", async (context) => {
+  let requests = 0;
   const originalFetch = globalThis.fetch;
-  globalThis.fetch = async (url) => {
-    const requestUrl = String(url);
-    if (requestUrl.includes("/parameters/wc")) return { ok: false, status: 503 };
-    const wc = new URL(requestUrl).searchParams.get("wc") || "";
-    const supported = wc.endsWith("2024") || wc.endsWith("2023");
-    return {
-      ok: true,
-      headers: { get: () => "application/json" },
-      json: async () => ({ estimates: supported ? [{ ESTIMATE: 1_000_000 }] : [] }),
-    };
+  globalThis.fetch = async () => {
+    requests += 1;
+    return { ok: false, status: 503 };
   };
   context.after(() => { globalThis.fetch = originalFetch; });
 
   const response = await call({ url: "/api/options/evaluation-years?state=ID" });
   assert.equal(response.code, 200);
-  assert.deepEqual(response.body, [2024, 2023]);
+  assert.deepEqual(response.body, []);
+  assert.equal(requests, 1);
 });
 
 test("every estimate type produces a normalized official result", async (context) => {

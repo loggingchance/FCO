@@ -24,6 +24,8 @@ const packagedEstimateTypes = [
   { id: "litter_carbon", label: "Litter carbon", unit: "metric tonnes carbon" },
   { id: "soil_organic_carbon", label: "Soil organic carbon", unit: "metric tonnes carbon" },
 ];
+const candidateEvaluationYears = Array.from({ length: 12 }, (_, index) => new Date().getUTCFullYear() - 1 - index);
+const candidateDefaultYear = candidateEvaluationYears.includes(2023) ? 2023 : candidateEvaluationYears[0];
 
 const GROUPING_LABELS: Record<string, string> = {
   state: "State total",
@@ -80,18 +82,18 @@ export function Explore() {
     setYearMessage("Loading FIA evaluation years...");
     api.evaluationYears(state).then((years) => {
       if (!years.length) {
-        setEvaluationYears([]);
-        setEvaluationYear(0);
-        setYearMessage("FIA did not confirm an available evaluation year for this state.");
+        setEvaluationYears(candidateEvaluationYears);
+        setEvaluationYear((current) => candidateEvaluationYears.includes(current) ? current : candidateDefaultYear);
+        setYearMessage("FIA year metadata is unavailable. The selected year is accepted only if the official estimate request succeeds.");
         return;
       }
       setEvaluationYears(years);
       setEvaluationYear((current) => years.includes(current) ? current : years[0]);
       setYearMessage("Years are state-specific FIA evaluation groups and may lag the current calendar year.");
     }).catch(() => {
-      setEvaluationYears([]);
-      setEvaluationYear(0);
-      setYearMessage("FIA evaluation years are currently unavailable. No estimate can be generated until they are confirmed.");
+      setEvaluationYears(candidateEvaluationYears);
+      setEvaluationYear((current) => candidateEvaluationYears.includes(current) ? current : candidateDefaultYear);
+      setYearMessage("FIA year metadata is unavailable. The selected year is accepted only if the official estimate request succeeds.");
     });
   }, [state]);
 
@@ -190,9 +192,8 @@ export function Explore() {
             </select>
           </label>
           <label>
-            FIA evaluation year
+            Requested FIA evaluation year
             <select value={evaluationYear} onChange={(e) => setEvaluationYear(Number(e.target.value))} disabled={!evaluationYears.length}>
-              {!evaluationYears.length && <option value={0}>Unavailable</option>}
               {evaluationYears.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
             <small className="field-help">{yearMessage}</small>
