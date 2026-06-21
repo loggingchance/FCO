@@ -11,15 +11,13 @@ import { trackUsage } from "../services/analytics";
 import { COUNTIES, STATES } from "../../shared/counties.js";
 import { ADVANCED_FILTERS } from "../../shared/fiaOptions.js";
 
-const fallbackStates: StateOption[] = STATES;
-const SAFE_EVALUATION_YEARS = [2023, 2022, 2021, 2020, 2019, 2018];
-
-const fallbackEstimateTypes = [
+const packagedStates: StateOption[] = STATES;
+const packagedEstimateTypes = [
   { id: "forest_area", label: "Forest area", unit: "acres" },
   { id: "total_carbon", label: "Total forest carbon", unit: "metric tonnes carbon" },
   { id: "growing_stock_volume", label: "Growing-stock volume", unit: "cubic feet" },
-  { id: "live_tree_carbon", label: "Live tree carbon", unit: "short tons carbon" },
-  { id: "standing_dead_carbon", label: "Standing dead tree carbon", unit: "short tons carbon" },
+  { id: "live_tree_carbon", label: "Live tree carbon", unit: "metric tonnes carbon" },
+  { id: "standing_dead_carbon", label: "Standing dead tree carbon", unit: "metric tonnes carbon" },
   { id: "live_aboveground_carbon", label: "Live aboveground carbon", unit: "metric tonnes carbon" },
   { id: "live_belowground_carbon", label: "Live belowground carbon", unit: "metric tonnes carbon" },
   { id: "dead_wood_carbon", label: "Dead wood carbon", unit: "metric tonnes carbon" },
@@ -47,8 +45,8 @@ export function Explore() {
   const [geoType, setGeoType] = useState<"state" | "county">("state");
   const [estimateType, setEstimateType] = useState("total_carbon");
   const [grouping, setGrouping] = useState("state");
-  const [evaluationYear, setEvaluationYear] = useState(2023);
-  const [evaluationYears, setEvaluationYears] = useState<number[]>(SAFE_EVALUATION_YEARS);
+  const [evaluationYear, setEvaluationYear] = useState(0);
+  const [evaluationYears, setEvaluationYears] = useState<number[]>([]);
   const [yearMessage, setYearMessage] = useState("Loading FIA evaluation years...");
   const [advanced, setAdvanced] = useState(false);
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -62,9 +60,9 @@ export function Explore() {
         setStates(items);
       })
       .catch(() => {
-        setStates(fallbackStates);
+        setStates(packagedStates);
       });
-    api.estimateTypes().then(setEstimateTypes).catch(() => setEstimateTypes(fallbackEstimateTypes));
+    api.estimateTypes().then(setEstimateTypes).catch(() => setEstimateTypes(packagedEstimateTypes));
   }, []);
 
   useEffect(() => {
@@ -82,17 +80,18 @@ export function Explore() {
     setYearMessage("Loading FIA evaluation years...");
     api.evaluationYears(state).then((years) => {
       if (!years.length) {
-        setEvaluationYears(SAFE_EVALUATION_YEARS);
-        setYearMessage("Using recent evaluation years while FIA year availability is refreshed.");
+        setEvaluationYears([]);
+        setEvaluationYear(0);
+        setYearMessage("FIA did not confirm an available evaluation year for this state.");
         return;
       }
       setEvaluationYears(years);
       setEvaluationYear((current) => years.includes(current) ? current : years[0]);
       setYearMessage("Years are state-specific FIA evaluation groups and may lag the current calendar year.");
     }).catch(() => {
-      setEvaluationYears(SAFE_EVALUATION_YEARS);
-      setEvaluationYear((current) => SAFE_EVALUATION_YEARS.includes(current) ? current : SAFE_EVALUATION_YEARS[0]);
-      setYearMessage("Using recent evaluation years while FIA year availability is refreshed.");
+      setEvaluationYears([]);
+      setEvaluationYear(0);
+      setYearMessage("FIA evaluation years are currently unavailable. No estimate can be generated until they are confirmed.");
     });
   }, [state]);
 
@@ -152,7 +151,7 @@ export function Explore() {
     <div className="page-grid">
       <section className="panel wide">
         <h1>Explore Carbon</h1>
-        <p className="lede">Generate broad-area FIA-style estimates for states, counties, and regions. Results are normalized for cards, charts, tables, maps, and report exports.</p>
+        <p className="lede">Generate official broad-area FIA estimates for states and counties. Results are presented in cards, charts, tables, maps, and report exports.</p>
       </section>
       <section className="panel form-panel wide">
         <h2>Estimate setup</h2>
@@ -192,7 +191,8 @@ export function Explore() {
           </label>
           <label>
             FIA evaluation year
-            <select value={evaluationYear} onChange={(e) => setEvaluationYear(Number(e.target.value))}>
+            <select value={evaluationYear} onChange={(e) => setEvaluationYear(Number(e.target.value))} disabled={!evaluationYears.length}>
+              {!evaluationYears.length && <option value={0}>Unavailable</option>}
               {evaluationYears.map((year) => <option key={year} value={year}>{year}</option>)}
             </select>
             <small className="field-help">{yearMessage}</small>
@@ -203,7 +203,7 @@ export function Explore() {
           <button className="link-button advanced-toggle" onClick={() => setAdvanced(!advanced)} aria-expanded={advanced}>
             {advanced ? "Hide advanced filters" : "Advanced filters"}<ChevronDown size={16} className={advanced ? "open" : ""} />
           </button>
-          <button className="primary" onClick={generate} disabled={loading}><Play size={17} /> {loading ? "Generating..." : "Generate Results"}</button>
+          <button className="primary" onClick={generate} disabled={loading || !evaluationYear}><Play size={17} /> {loading ? "Generating..." : "Generate Results"}</button>
         </div>
         {requestError && <p className="request-error" role="alert">{requestError}</p>}
         {advanced && (
@@ -238,10 +238,10 @@ export function Explore() {
             </article>
             <article><span>Sampling error</span><strong>{result.rows.length === 1 && result.rows[0]?.sampling_error_percent != null ? formatPercent(result.rows[0].sampling_error_percent) : "By row"}</strong><em>{result.rows.length === 1 ? "FIA estimate" : "See results table"}</em></article>
             <article><span>Contributing plots</span><strong>{result.rows.length === 1 && result.rows[0]?.plot_count != null ? result.rows[0].plot_count.toLocaleString() : result.rows.length === 1 ? "N/A" : "By row"}</strong><em>{result.rows.length === 1 ? "FIA plots" : "See results table"}</em></article>
-            <article><span>Data status</span><strong className="status-value">{result.source_mode === "live" ? "Official FIA" : "Illustrative data"}</strong><em>{result.evaluation_year || "sample data"}</em></article>
+            <article><span>Data status</span><strong className="status-value">Official FIA</strong><em>{result.evaluation_year}</em></article>
           </section>
           <section className="panel"><h2>Chart</h2><EstimateChart rows={result.rows} /></section>
-          <section className="panel"><h2>Map</h2><MapPanel stateCode={state} label={geoType === "county" ? selectedCountyName : states.find((item) => item.code === state)?.name || state} /></section>
+          <section className="panel"><h2>Map</h2><MapPanel stateCode={state} countyFips={geoType === "county" ? county : undefined} label={geoType === "county" ? selectedCountyName : states.find((item) => item.code === state)?.name || state} /></section>
           <section className="panel wide">
             <h2>Table and exports</h2>
             <p className="result-context"><strong>Grouped by:</strong> {GROUPING_LABELS[result.request.grouping || result.request.geography.type] || result.request.grouping} <span>FIA evaluation year: {result.evaluation_year || "N/A"}</span></p>

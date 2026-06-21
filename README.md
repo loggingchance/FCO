@@ -2,35 +2,33 @@
 
 *The COLE Tribute App*
 
-FCO is an independent, unofficial, COLE-inspired forest carbon explorer. It turns FIA-style forest inventory estimates into understandable maps, tables, charts, and reports for counties, states, and regions.
+FCO is an independent, unofficial, COLE-inspired explorer for broad-area USDA Forest Service Forest Inventory and Analysis (FIA) estimates. The public application is available at [fco.forestenterprise.org](https://fco.forestenterprise.org/).
 
-This repository contains the focused public FCO explorer:
+## Data integrity
 
-- React + Vite + TypeScript frontend.
-- FastAPI backend.
-- Mock normalized estimate API.
-- Scale and reliability guardrails.
-- Public pages for methods, history, limitations, data sources, glossary, and reports.
-- PDF/HTML report generation shell.
-- Anonymous aggregate product analytics with a scheduled weekly email report.
+- Every displayed estimate must come from a completed FIADB-API `fullreport` request.
+- FCO does not generate modeled, sample, illustrative, or substitute estimates.
+- Failed, unavailable, and unsupported requests return an error without numbers.
+- Evaluation-year choices are taken from FIA's published parameter catalog or confirmed by successful official queries.
+- Results preserve FIA standard error, sampling error, and contributing plot count when supplied.
+- Carbon is displayed primarily in metric tonnes of elemental carbon. The alternate short-ton value is an explicit mass-unit conversion using `1 metric tonne = 1.10231131 short tons`.
+- Elemental carbon is never labeled as CO2e.
 
-## Non-affiliation notice
+## Supported exploration
 
-FCO is an independent, unofficial, COLE-inspired tool. It is not affiliated with, endorsed by, sponsored by, or maintained by the USDA Forest Service, FIA, NCASI, the original COLE development group, or any prior COLE authors. FCO uses public data and public documentation to make FIA-based forest carbon information easier to explore.
+The production API supports FIA state and county requests, official evaluation groups, documented FIA row groupings, advanced condition filters, carbon pools, comparisons, and exports. Availability still depends on the combinations published by FIA; FCO returns no result when FIA cannot fulfill a selected combination.
 
-## Quick start
+## Architecture
 
-### Backend
+- React, Vite, and TypeScript interface.
+- Same-origin Vercel serverless API in `frontend/api/[...path].js`.
+- Official FIADB-API requests made server-side.
+- CSV, standalone HTML, print/PDF report exports.
+- Anonymous aggregate product analytics and a scheduled weekly email report.
 
-```powershell
-cd backend
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
+The old duplicate FastAPI mock implementation was removed. There is one estimate path and one result contract.
 
-### Frontend
+## Local development
 
 ```powershell
 cd frontend
@@ -38,36 +36,21 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open the local URL printed by Vite. Local development calls the deployed official-data API by default, so it exercises the same estimate service as the public application. Set `VITE_API_BASE_URL` only when intentionally testing another API deployment.
 
-For a Windows backend launcher, double-click `RUN_FCO_BACKEND.cmd`. For internet deployment, double-click `DEPLOY_BACKEND_TO_VERCEL.cmd` after uploading to GitHub. Detailed instructions are in `docs/BACKEND_DEPLOYMENT.md`.
+Run verification with:
 
-After the backend is live, double-click `DEPLOY_FRONTEND_TO_VERCEL.cmd`, import the same repository as a new Vercel project, and set its root directory to `frontend`.
-
-The Vercel frontend proxies `/api/*` to the deployed backend through `frontend/vercel.json`, avoiding cross-origin browser configuration.
-
-## Upload to GitHub on Windows
-
-For first-time authentication, double-click `SETUP_GITHUB_ACCESS.cmd` and finish the browser sign-in. After that, double-click `UPLOAD_TO_GITHUB.cmd` whenever you want to commit and upload the current project to `loggingchance/FCO`.
-
-## Environment
-
-Create `frontend/.env.local` if needed:
-
-```text
-VITE_API_BASE_URL=http://localhost:8000
+```powershell
+npm test
+npm run build
 ```
 
-Backend options:
+## Deployment
 
-```text
-FIA_API_BASE_URL=https://apps.fs.usda.gov/fiadb-api
-FIA_DEFAULT_EVALUATION_YEAR=2023
-FIA_TIMEOUT_SECONDS=4
-```
+Vercel deploys the `frontend` directory from `loggingchance/FCO`. The production domain is `fco.forestenterprise.org`. Upload changes on Windows with `UPLOAD_TO_GITHUB.cmd`.
 
-Weekly aggregate usage reporting requires Upstash Redis, Resend, and Vercel Cron environment variables. Setup instructions are in `docs/WEEKLY_USAGE_REPORT.md`.
+Weekly aggregate usage reporting setup is documented in `docs/WEEKLY_USAGE_REPORT.md`.
 
-## Build phases represented here
+## Non-affiliation notice
 
-FCO is intentionally limited to the COLE-inspired public explorer. State-level forest area (`snum=2`) and total forest carbon (`snum=97`) can request the official FIADB-API `fullreport` endpoint. Unsupported combinations and unavailable API requests fall back to clearly labeled mock results rather than silently presenting them as live data.
+FCO is independent and unofficial. It is not affiliated with, endorsed by, sponsored by, or maintained by the USDA Forest Service, FIA, NCASI, the original COLE development group, or any prior COLE authors. FCO uses public data and documentation to make broad-area FIA information easier to explore.

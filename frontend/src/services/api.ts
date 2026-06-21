@@ -1,7 +1,7 @@
 import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
 
 const configuredBase = import.meta.env.VITE_API_BASE_URL?.trim();
-const API_BASE = configuredBase || (import.meta.env.DEV ? "http://localhost:8000" : "");
+const API_BASE = configuredBase || (import.meta.env.DEV ? "https://fco.forestenterprise.org" : "");
 
 export const apiBaseUrl = API_BASE || window.location.origin;
 
@@ -27,6 +27,7 @@ async function postJson<T>(path: string, payload: unknown): Promise<T> {
 export const api = {
   states: () => getJson<StateOption[]>("/api/geographies/states"),
   counties: (state: string) => getJson<CountyOption[]>(`/api/geographies/counties?state=${encodeURIComponent(state)}`),
+  countyBoundary: (fips: string) => getJson<{ name: string; geometry: { type: "Polygon" | "MultiPolygon"; coordinates: unknown }; source: string }>(`/api/geographies/county-boundary?fips=${encodeURIComponent(fips)}`),
   estimateTypes: () => getJson<{ id: string; label: string; unit: string }[]>("/api/options/estimate-types"),
   evaluationYears: (state: string) => getJson<number[]>(`/api/options/evaluation-years?state=${encodeURIComponent(state)}`),
   estimate: (payload: EstimateRequest) => postJson<EstimateResponse>("/api/estimate", payload),

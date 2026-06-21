@@ -2,6 +2,7 @@ const sources = [
   ["FIA FIADB-API / EVALIDator", "Broad-area forest area, volume, biomass, carbon, and sampling errors."],
   ["FIA DataMart / FIADB", "Inventory tables and reference data used for validation and future precomputed summaries."],
   ["FIA documentation", "Definitions, estimation guidance, evaluation groups, attributes, and limitations."],
+  ["U.S. Census Bureau TIGERweb", "Official county boundary geometry used for county result maps."],
   ["FCO interface data", "State and county selector lists, labels, and display metadata packaged with the application."],
 ];
 

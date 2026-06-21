@@ -1,17 +1,17 @@
-import { ArrowRight, FileText, Filter, History, Layers3, MapPin, Search } from "lucide-react";
+import { ArrowRight, BadgeCheck, FileText, Filter, History, Layers3, MapPin, Search } from "lucide-react";
 import type { Page } from "../types";
+import { COUNTIES, STATES } from "../../shared/counties.js";
 
-const pools = [
-  ["Live tree", 46],
-  ["Soil organic", 31],
-  ["Down dead wood", 9],
-  ["Standing dead", 7],
-  ["Litter", 7],
+const resultContents = [
+  ["Official source", "Every number comes from a completed USDA Forest Service FIADB-API request."],
+  ["Evaluation year", "FCO offers only evaluation groups confirmed as available by FIA."],
+  ["Uncertainty", "Standard error, sampling error, and contributing plot counts are retained when FIA returns them."],
+  ["No substitute data", "If FIA cannot complete a request, FCO shows an error and no estimate."],
 ] as const;
 
 export function Home({ setPage }: { setPage: (page: Page) => void }) {
   const features: Array<{ title: string; body: string; page: Page; icon: React.ComponentType<{ size?: number }> }> = [
-    { title: "Pick a place", body: "Choose a state, county, or region.", page: "explore", icon: MapPin },
+    { title: "Pick a place", body: "Choose a state or county.", page: "explore", icon: MapPin },
     { title: "Choose forest filters", body: "Explore ownership, stand size, and FIA-based categories.", page: "explore", icon: Filter },
     { title: "View carbon pools", body: "Compare live tree, dead wood, litter, soil, and total carbon.", page: "explore", icon: Layers3 },
     { title: "Export a report", body: "Create a plain-English summary with methods and limitations.", page: "reports", icon: FileText },
@@ -24,8 +24,8 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
         <h1 className="home-task-title">Choose a place. Build an estimate.</h1>
         <p className="lede">Select a state or county, choose the forest carbon measure you need, and generate a documented result with maps, tables, and exports.</p>
         <div className="home-scope-grid" aria-label="Explorer coverage">
-          <div><strong>50 states + DC</strong><span>Nationwide coverage</span></div>
-          <div><strong>3,143</strong><span>Counties and equivalents</span></div>
+          <div><strong>{STATES.length - 1} states + DC</strong><span>Packaged state selectors</span></div>
+          <div><strong>{COUNTIES.length.toLocaleString()}</strong><span>County and equivalent selectors</span></div>
           <div><strong>FIA uncertainty</strong><span>Error and plot counts</span></div>
         </div>
         <div className="home-primary-actions">
@@ -36,23 +36,16 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
           <button onClick={() => setPage("history")}><History size={17} /> History</button>
           <button onClick={() => setPage("methodology")}><Search size={17} /> Method</button>
         </div>
-        <p className="scale-warning">For county, state, and regional estimates. Not a parcel-level or stand-level carbon calculator.</p>
+        <p className="scale-warning">For county and state estimates. Not a parcel-level or stand-level carbon calculator.</p>
       </div>
 
-      <div className="home-dashboard" aria-label="Illustrative Wisconsin forest carbon preview">
-        <div className="dashboard-context"><strong>Wisconsin</strong><span>Illustrative 2023 sample</span></div>
-        <div className="metric-grid">
-          <div className="metric"><span>Total carbon</span><strong>1.28B</strong><em>metric tonnes carbon</em></div>
-          <div className="metric"><span>Forest area</span><strong>17.1M</strong><em>acres</em></div>
-        </div>
-        <figure className="pool-preview">
-          <figcaption><strong>Share by carbon pool</strong><span>Percent of illustrative total</span></figcaption>
-          {pools.map(([label, share]) => (
-            <div className="pool-row" key={label}>
-              <span>{label}</span><i><b style={{ width: `${share}%` }} /></i><strong>{share}%</strong>
-            </div>
+      <div className="home-dashboard" aria-label="FCO data integrity commitments">
+        <div className="dashboard-context"><strong>What every result includes</strong><span>Official data only</span></div>
+        <div className="integrity-list">
+          {resultContents.map(([title, body]) => (
+            <div key={title}><BadgeCheck size={21} /><span><strong>{title}</strong><small>{body}</small></span></div>
           ))}
-        </figure>
+        </div>
       </div>
 
       <div className="feature-grid">

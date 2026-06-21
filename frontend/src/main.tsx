@@ -27,7 +27,7 @@ const pageMetadata: Record<Page, { title: string; description: string }> = {
   },
   compare: {
     title: "Compare Forest Carbon by Place | FCO",
-    description: "Compare FIA forest carbon estimates among U.S. states, counties, and regions.",
+    description: "Compare official FIA forest carbon estimates between U.S. states or counties.",
   },
   reports: {
     title: "Forest Carbon Reports | FCO",

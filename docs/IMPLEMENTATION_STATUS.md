@@ -1,35 +1,25 @@
 # FCO Implementation Status
 
-## Built in this slice
+## Production behavior
 
-- React + Vite + TypeScript public frontend.
-- FastAPI backend with health, geography, estimate options, estimate, and report endpoints.
-- Public pages: Home, Explore Carbon, Compare Places, Reports, Methodology, History, About, Limitations, Data Sources, and Glossary.
-- Normalized mock estimate response schema.
-- CSV, HTML report, and PDF report export flow.
-- FIADB-API service boundary with validated initial attribute mappings.
-- Live FIADB-API state-total adapter for forest area and total forest carbon.
-- User-selectable FIA evaluation year and visible live/fallback/mock status.
-- FIA sampling error and plot count normalization with reliability warnings.
-- Backend tests for health, estimate schema, FIADB normalization, and grouping guardrails.
+- The Vercel serverless API is the only estimate backend.
+- Results are returned only after a successful USDA Forest Service FIADB-API request.
+- No sample, mock, modeled, or fallback estimates exist.
+- FIA failures and unsupported combinations return errors without numeric output.
+- FIA evaluation years are discovered from official services rather than invented defaults.
+- State and county geographies, supported FIADB row groupings, advanced filters, carbon pools, comparisons, and exports use the same official request path.
+- County maps request official boundary geometry from U.S. Census Bureau TIGERweb and display no substitute shape if that service is unavailable.
+- Standard error, sampling error, and contributing plot counts are retained when returned by FIA.
 
-## Live-data boundary
+## Units
 
-- Official endpoint: `POST https://apps.fs.usda.gov/fiadb-api/fullreport`.
-- Enabled mappings: forest area (`snum=2`) and total forest carbon (`snum=97`).
-- Enabled geography/grouping: one state, ungrouped state total.
-- Response format: `NJSON`, normalized from `ESTIMATE`, `SE_PERCENT`, and `PLOT_COUNT`.
-- Invalid evaluation years, unsupported groupings, filters, counties, or network failures return a visibly labeled mock fallback.
+- Carbon output is normalized to metric tonnes of elemental carbon.
+- Source attributes published in short tons are converted with `1 short ton = 0.90718474 metric tonnes`.
+- The interface and exports also show the corresponding short tons of elemental carbon.
+- FCO does not present elemental carbon as CO2e.
 
-## Still intentionally mocked
+## Verification
 
-- County and multi-state FIA/EVALIDator calls.
-- FIA grouping and advanced filter mappings.
-- Map boundaries and real GIS layers.
-- Production maps and saved report permalinks.
-
-## Validation run
-
-- Backend tests cover API health, estimate schema, official-response normalization, and grouping guardrails.
-- Frontend TypeScript + production build: passed.
-- Same-session live smoke check: backend health returned OK and frontend returned HTTP 200.
+- Automated API-handler tests cover official normalization, all exposed estimate types, groupings, counties, filters, evaluation-year discovery, and failure behavior.
+- TypeScript compilation and the Vite production build are required before deployment.
+- Live availability remains controlled by FIA's published evaluation groups and service response.

@@ -57,7 +57,7 @@ export interface EstimateResponse {
   warnings: string[];
   method_note: string;
   data_source: string;
-  source_mode: "live" | "mock" | "mock_fallback";
+  source_mode: "live";
   evaluation_year?: number | null;
   generated_at: string;
 }

@@ -51,6 +51,25 @@ test("deployed URL paths resolve without a catch-all query parameter", async () 
   assert.ok(counties.body.length > 0);
 });
 
+test("county maps use an official Census TIGERweb boundary", async (context) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const requestUrl = new URL(String(url));
+    assert.equal(requestUrl.hostname, "tigerweb.geo.census.gov");
+    assert.match(requestUrl.searchParams.get("where"), /STATE='50' AND COUNTY='001'/);
+    return {
+      ok: true,
+      json: async () => ({ features: [{ geometry: { type: "Polygon", coordinates: [[[-73, 44], [-72, 44], [-72, 45], [-73, 44]]] } }] }),
+    };
+  };
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await call({ url: "/api/geographies/county-boundary?fips=50001" });
+  assert.equal(response.code, 200);
+  assert.equal(response.body.source, "U.S. Census Bureau TIGERweb");
+  assert.equal(response.body.geometry.type, "Polygon");
+});
+
 test("anonymous usage events are accepted without affecting the application", async () => {
   const response = await call({ method: "POST", url: "/api/analytics/event", body: { event: "page_view", dimensions: { page: "explore" } } });
   assert.equal(response.code, 204);
@@ -125,6 +144,75 @@ test("every estimate type produces a normalized official result", async (context
     assert.equal(response.body.source_mode, "live");
     assert.equal(response.body.rows.length, 1);
   }
+});
+
+test("short-ton FIA carbon attributes are normalized to metric tonnes carbon", async (context) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const isArea = new URL(String(url)).searchParams.get("snum") === "2";
+    return {
+      ok: true,
+      json: async () => ({ estimates: [{ ESTIMATE: isArea ? 100 : 1_000, SE: isArea ? 1 : 100, SE_PERCENT: 10, PLOT_COUNT: 40 }] }),
+    };
+  };
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await call({
+    method: "POST",
+    url: "/api/estimate",
+    body: {
+      geography: { type: "state", states: ["VT"], counties: [] },
+      estimate_type: "live_tree_carbon",
+      grouping: "state",
+      evaluation_year: 2023,
+      filters: {},
+      live_data: true,
+    },
+  });
+  assert.equal(response.code, 200);
+  assert.equal(response.body.headline.unit, "metric tonnes carbon");
+  assert.equal(response.body.headline.value, 907.18474);
+  assert.equal(response.body.rows[0].standard_error, 90.718474);
+  assert.match(response.body.method_note, /1 short ton = 0\.90718474 metric tonnes/);
+});
+
+test("failed official requests return an error and no substitute estimate", async (context) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: false, status: 503 });
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await call({
+    method: "POST",
+    url: "/api/estimate",
+    body: {
+      geography: { type: "state", states: ["VT"], counties: [] },
+      estimate_type: "total_carbon",
+      grouping: "state",
+      evaluation_year: 2023,
+      filters: {},
+      live_data: true,
+    },
+  });
+  assert.equal(response.code, 502);
+  assert.equal(response.body.source_mode, undefined);
+  assert.equal(response.body.rows, undefined);
+  assert.match(response.body.detail, /FIADB returned HTTP 503/);
+});
+
+test("an estimate without an explicitly official request and FIA year is rejected", async () => {
+  const response = await call({
+    method: "POST",
+    url: "/api/estimate",
+    body: {
+      geography: { type: "state", states: ["VT"], counties: [] },
+      estimate_type: "total_carbon",
+      grouping: "state",
+      filters: {},
+    },
+  });
+  assert.equal(response.code, 502);
+  assert.equal(response.body.rows, undefined);
+  assert.match(response.body.detail, /Official FIA data must be explicitly requested/);
 });
 
 test("valid FIADB JSON is accepted even when its content-type header is incorrect", async (context) => {

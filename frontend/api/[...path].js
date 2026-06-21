@@ -5,8 +5,8 @@ const ESTIMATE_TYPES = [
   { id: "forest_area", label: "Forest area", unit: "acres" },
   { id: "total_carbon", label: "Total forest carbon", unit: "metric tonnes carbon" },
   { id: "growing_stock_volume", label: "Growing-stock volume", unit: "cubic feet" },
-  { id: "live_tree_carbon", label: "Live tree carbon", unit: "short tons carbon" },
-  { id: "standing_dead_carbon", label: "Standing dead tree carbon", unit: "short tons carbon" },
+  { id: "live_tree_carbon", label: "Live tree carbon", unit: "metric tonnes carbon" },
+  { id: "standing_dead_carbon", label: "Standing dead tree carbon", unit: "metric tonnes carbon" },
   { id: "live_aboveground_carbon", label: "Live aboveground carbon", unit: "metric tonnes carbon" },
   { id: "live_belowground_carbon", label: "Live belowground carbon", unit: "metric tonnes carbon" },
   { id: "dead_wood_carbon", label: "Dead wood carbon", unit: "metric tonnes carbon" },
@@ -14,13 +14,14 @@ const ESTIMATE_TYPES = [
   { id: "soil_organic_carbon", label: "Soil organic carbon", unit: "metric tonnes carbon" },
 ];
 
+const SHORT_TONS_TO_METRIC_TONNES = 0.90718474;
 const STATE_FIPS = Object.fromEntries(STATES.map((state) => [state.code, state.fips]));
 const DEFINITIONS = {
   forest_area: { snum: 2, label: "Forest area", unit: "acres" },
   total_carbon: { snum: 103, label: "Total forest carbon", unit: "metric tonnes carbon" },
   growing_stock_volume: { snum: 15, label: "Growing-stock volume", unit: "cubic feet" },
-  live_tree_carbon: { snum: 55000, label: "Live tree carbon", unit: "short tons carbon" },
-  standing_dead_carbon: { snum: 47000, label: "Standing dead tree carbon", unit: "short tons carbon" },
+  live_tree_carbon: { snum: 55000, label: "Live tree carbon", unit: "metric tonnes carbon", sourceUnit: "short tons carbon", multiplier: SHORT_TONS_TO_METRIC_TONNES },
+  standing_dead_carbon: { snum: 47000, label: "Standing dead tree carbon", unit: "metric tonnes carbon", sourceUnit: "short tons carbon", multiplier: SHORT_TONS_TO_METRIC_TONNES },
   live_aboveground_carbon: { snum: 98, label: "Live aboveground carbon", unit: "metric tonnes carbon" },
   live_belowground_carbon: { snum: 99, label: "Live belowground carbon", unit: "metric tonnes carbon" },
   dead_wood_carbon: { snum: 100, label: "Dead wood carbon", unit: "metric tonnes carbon" },
@@ -152,8 +153,14 @@ async function sendWeeklyUsageReport() {
 
 function numberValue(record, key) {
   const value = record?.[key];
-  if (value === null || value === undefined || value === "" || value === "--") return 0;
-  return Number(String(value).replaceAll(",", ""));
+  if (value === null || value === undefined || value === "" || value === "--") return null;
+  const parsed = Number(String(value).replaceAll(",", ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function estimateValue(record, key, definition) {
+  const value = numberValue(record, key);
+  return value === null ? null : value * (definition.multiplier || 1);
 }
 
 async function evaluationYears(state) {
@@ -265,16 +272,44 @@ async function fiaRecords(state, year, definition, countyFips = null, rowGroupin
   }
 }
 
+async function countyBoundary(fips) {
+  const county = COUNTIES.find((item) => item.fips === fips);
+  if (!county) throw new Error("Unknown county FIPS code");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  const parameters = new URLSearchParams({
+    where: `STATE='${fips.slice(0, 2)}' AND COUNTY='${fips.slice(2)}'`,
+    outFields: "NAME,STATE,COUNTY",
+    returnGeometry: "true",
+    outSR: "4326",
+    f: "geojson",
+  });
+  try {
+    const response = await fetch(`https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query?${parameters}`, {
+      headers: { "User-Agent": "FCO/0.1 county boundary client" },
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`Census TIGERweb returned HTTP ${response.status}`);
+    const payload = await response.json();
+    const geometry = payload?.features?.[0]?.geometry;
+    if (!geometry || !["Polygon", "MultiPolygon"].includes(geometry.type)) throw new Error("Census TIGERweb returned no county boundary");
+    return { name: county.name, geometry, source: "U.S. Census Bureau TIGERweb" };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function officialEstimate(request) {
-  if (request?.live_data === false) throw new Error("Official FIA data was not requested");
+  if (request?.live_data !== true) throw new Error("Official FIA data must be explicitly requested");
   const state = request?.geography?.states?.[0];
   const countyFips = request?.geography?.type === "county" ? request?.geography?.counties?.[0] : null;
-  const year = request?.evaluation_year || 2023;
+  const year = Number(request?.evaluation_year);
   const definition = DEFINITIONS[request?.estimate_type];
   const grouping = request?.grouping || request?.geography?.type || "state";
   if (!STATE_FIPS[state] || !["state", "county"].includes(request?.geography?.type)) throw new Error("Live estimates require one listed state or county");
   if (countyFips && (!COUNTIES.some((county) => county.fips === countyFips) || !countyFips.startsWith(STATE_FIPS[state]))) throw new Error("The selected county does not match the selected state");
   if (!definition) throw new Error("This estimate type is not enabled for live FIA requests");
+  if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("Select an FIA-published evaluation year");
   if (!(grouping in GROUPINGS)) throw new Error("This result grouping is not enabled");
   if (grouping === "carbon_pool" && request.estimate_type !== "total_carbon") throw new Error("Carbon-pool grouping requires total forest carbon");
   filterExpression(countyFips, request?.filters);
@@ -289,17 +324,18 @@ async function officialEstimate(request) {
       fiaRecords(state, year, DEFINITIONS.forest_area, countyFips, null, request.filters),
       ...CARBON_POOLS.map(([, poolDefinition]) => fiaRecords(state, year, poolDefinition, countyFips, null, request.filters)),
     ]);
-    const area = numberValue(areaRecords[0], "ESTIMATE");
+    const area = estimateValue(areaRecords[0], "ESTIMATE", DEFINITIONS.forest_area);
     if (!Number.isFinite(area) || area <= 0) throw new Error("FIADB returned an invalid forest area");
     rows = poolRecordSets.map((records, index) => {
       const record = records[0];
-      const total = numberValue(record, "ESTIMATE");
+      const total = estimateValue(record, "ESTIMATE", CARBON_POOLS[index][1]);
+      if (total === null) throw new Error(`FIADB returned an invalid ${CARBON_POOLS[index][0]} estimate`);
       return {
         label: CARBON_POOLS[index][0],
         total,
         per_acre: total / area,
         area_acres: area,
-        standard_error: numberValue(record, "SE") || null,
+        standard_error: estimateValue(record, "SE", CARBON_POOLS[index][1]),
         sampling_error_percent: numberValue(record, "SE_PERCENT") || null,
         plot_count: Math.round(numberValue(record, "PLOT_COUNT")) || null,
         unit: definition.unit,
@@ -313,21 +349,22 @@ async function officialEstimate(request) {
         ? Promise.resolve(null)
         : fiaRecords(state, year, DEFINITIONS.forest_area, countyFips, rowGrouping, request.filters),
     ]);
-    const areaByGroup = new Map((areaRecords || []).map((record, index) => [recordKey(record, index), numberValue(record, "ESTIMATE")]));
+    const areaByGroup = new Map((areaRecords || []).map((record, index) => [recordKey(record, index), estimateValue(record, "ESTIMATE", DEFINITIONS.forest_area)]));
     rows = estimateRecords.map((record, index) => {
-      const total = numberValue(record, "ESTIMATE");
+      const total = estimateValue(record, "ESTIMATE", definition);
       const area = request.estimate_type === "forest_area" ? total : areaByGroup.get(recordKey(record, index)) || 0;
+      if (total === null) return null;
       return {
         label: groupLabel(record, geographyLabel),
         total,
         per_acre: request.estimate_type === "forest_area" ? 1 : (area ? total / area : 0),
         area_acres: area,
-        standard_error: numberValue(record, "SE") || null,
+        standard_error: estimateValue(record, "SE", definition),
         sampling_error_percent: numberValue(record, "SE_PERCENT") || null,
         plot_count: Math.round(numberValue(record, "PLOT_COUNT")) || null,
         unit: definition.unit,
       };
-    }).filter((row) => Number.isFinite(row.total) && row.total > 0);
+    }).filter((row) => row && Number.isFinite(row.total) && row.total > 0);
     if (rowGrouping && rows.some((row) => row.label === geographyLabel)) {
       throw new Error(`FIADB did not return the requested ${grouping.replaceAll("_", " ")} grouping`);
     }
@@ -348,7 +385,7 @@ async function officialEstimate(request) {
     headline: { label: definition.label, value, unit: definition.unit, per_acre: perAcre },
     rows,
     warnings,
-    method_note: `Official FIADB-API fullreport estimate using attribute ${definition.snum}, evaluation group ${STATE_FIPS[state]}${year}${countyFips ? `, county filter ${countyFips}` : ""}, and ${grouping.replaceAll("_", " ")} grouping.`,
+    method_note: `Official FIADB-API fullreport estimate using attribute ${definition.snum}, evaluation group ${STATE_FIPS[state]}${year}${countyFips ? `, county filter ${countyFips}` : ""}, and ${grouping.replaceAll("_", " ")} grouping.${definition.multiplier ? ` FIA reports this attribute in ${definition.sourceUnit}; FCO converts it to metric tonnes carbon using 1 short ton = ${SHORT_TONS_TO_METRIC_TONNES} metric tonnes.` : ""}`,
     data_source: "USDA Forest Service FIA FIADB-API / EVALIDator",
     source_mode: "live",
     evaluation_year: year,
@@ -359,12 +396,24 @@ async function officialEstimate(request) {
 export default async function handler(request, response) {
   const path = routePath(request);
   response.setHeader("Cache-Control", "no-store");
+  response.setHeader("Access-Control-Allow-Origin", "*");
+  response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  response.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (request.method === "OPTIONS") return response.status(204).end();
 
   if (request.method === "GET" && path === "health") return response.status(200).json({ status: "ok", app: "FCO - Forest Carbon Online" });
   if (request.method === "GET" && path === "geographies/states") return response.status(200).json(STATES);
   if (request.method === "GET" && path === "geographies/counties") {
     const state = String(queryParameter(request, "state"));
     return response.status(200).json(state ? COUNTIES.filter((county) => county.state === state) : COUNTIES);
+  }
+  if (request.method === "GET" && path === "geographies/county-boundary") {
+    try {
+      response.setHeader("Cache-Control", "s-maxage=2592000, stale-while-revalidate=31536000");
+      return response.status(200).json(await countyBoundary(String(queryParameter(request, "fips"))));
+    } catch (error) {
+      return response.status(502).json({ detail: error instanceof Error ? error.message : "County boundary unavailable" });
+    }
   }
   if (request.method === "GET" && path === "options/estimate-types") return response.status(200).json(ESTIMATE_TYPES);
   if (request.method === "GET" && path === "options/evaluation-years") {
