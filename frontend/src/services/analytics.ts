@@ -5,7 +5,8 @@ export type UsageEvent =
   | "comparison_generated"
   | "comparison_failed"
   | "export_created"
-  | "feedback_opened";
+  | "feedback_opened"
+  | "support_opened";
 
 export function trackUsage(event: UsageEvent, dimensions: Record<string, string | number | undefined> = {}) {
   fetch("/api/analytics/event", {

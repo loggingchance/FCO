@@ -67,7 +67,7 @@ function queryParameter(request, name) {
 
 const USAGE_EVENTS = new Set([
   "page_view", "estimate_generated", "estimate_failed", "comparison_generated",
-  "comparison_failed", "export_created", "feedback_opened",
+  "comparison_failed", "export_created", "feedback_opened", "support_opened",
 ]);
 
 function usageWeekKey(date = new Date()) {

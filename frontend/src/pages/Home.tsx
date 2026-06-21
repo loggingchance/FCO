@@ -1,6 +1,7 @@
-import { ArrowRight, BadgeCheck, FileText, Filter, History, Layers3, MapPin, Search } from "lucide-react";
+import { ArrowRight, BadgeCheck, Coffee, ExternalLink, FileText, Filter, History, Layers3, MapPin, Search } from "lucide-react";
 import type { Page } from "../types";
 import { COUNTIES, STATES } from "../../shared/counties.js";
+import { trackUsage } from "../services/analytics";
 
 const resultContents = [
   ["Official source", "Every number comes from a completed USDA Forest Service FIADB-API request."],
@@ -45,6 +46,11 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
           {resultContents.map(([title, body]) => (
             <div key={title}><BadgeCheck size={21} /><span><strong>{title}</strong><small>{body}</small></span></div>
           ))}
+        </div>
+        <div className="home-support">
+          <a href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer" onClick={() => trackUsage("support_opened", { page: "home" })}>
+            <Coffee size={15} aria-hidden="true" /> Enjoying FCO? Buy me a coffee <ExternalLink size={12} aria-hidden="true" />
+          </a>
         </div>
       </div>
 
