@@ -267,15 +267,26 @@ async function countyBoundary(fips) {
   if (!county) throw new Error("Unknown county FIPS code");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 20000);
+  const service = "https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer";
   const parameters = new URLSearchParams({
-    where: `STATE='${fips.slice(0, 2)}' AND COUNTY='${fips.slice(2)}'`,
+    where: `GEOID='${fips}'`,
     outFields: "NAME,STATE,COUNTY",
     returnGeometry: "true",
     outSR: "4326",
     f: "geojson",
   });
   try {
-    const response = await fetch(`https://tigerweb.geo.census.gov/arcgis/rest/services/TIGERweb/State_County/MapServer/1/query?${parameters}`, {
+    const metadataResponse = await fetch(`${service}?f=json`, {
+      headers: { "User-Agent": "FCO/0.1 county boundary client" },
+      signal: controller.signal,
+    });
+    if (!metadataResponse.ok) throw new Error(`Census TIGERweb metadata returned HTTP ${metadataResponse.status}`);
+    const metadata = await metadataResponse.json();
+    const countyLayer = metadata?.layers?.find((layer) => /^counties$/i.test(String(layer?.name || "")))
+      || metadata?.layers?.find((layer) => /count/i.test(String(layer?.name || "")));
+    if (!Number.isInteger(countyLayer?.id)) throw new Error("Census TIGERweb county layer was not found");
+
+    const response = await fetch(`${service}/${countyLayer.id}/query?${parameters}`, {
       headers: { "User-Agent": "FCO/0.1 county boundary client" },
       signal: controller.signal,
     });
@@ -345,7 +356,7 @@ async function officialEstimate(request) {
       const area = request.estimate_type === "forest_area" ? total : areaByGroup.get(recordKey(record, index)) || 0;
       if (total === null) return null;
       return {
-        label: groupLabel(record, geographyLabel),
+        label: rowGrouping ? groupLabel(record, geographyLabel) : geographyLabel,
         total,
         per_acre: request.estimate_type === "forest_area" ? 1 : (area ? total / area : 0),
         area_acres: area,

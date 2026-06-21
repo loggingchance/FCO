@@ -56,7 +56,11 @@ test("county maps use an official Census TIGERweb boundary", async (context) => 
   globalThis.fetch = async (url) => {
     const requestUrl = new URL(String(url));
     assert.equal(requestUrl.hostname, "tigerweb.geo.census.gov");
-    assert.match(requestUrl.searchParams.get("where"), /STATE='50' AND COUNTY='001'/);
+    if (requestUrl.pathname.endsWith("/MapServer")) {
+      return { ok: true, json: async () => ({ layers: [{ id: 7, name: "Counties" }] }) };
+    }
+    assert.equal(requestUrl.pathname.endsWith("/MapServer/7/query"), true);
+    assert.equal(requestUrl.searchParams.get("where"), "GEOID='50001'");
     return {
       ok: true,
       json: async () => ({ features: [{ geometry: { type: "Polygon", coordinates: [[[-73, 44], [-72, 44], [-72, 45], [-73, 44]]] } }] }),
@@ -68,6 +72,33 @@ test("county maps use an official Census TIGERweb boundary", async (context) => 
   assert.equal(response.code, 200);
   assert.equal(response.body.source, "U.S. Census Bureau TIGERweb");
   assert.equal(response.body.geometry.type, "Polygon");
+});
+
+test("an ungrouped county result uses the selected county name instead of FIA's state row label", async (context) => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const isArea = new URL(String(url)).searchParams.get("snum") === "2";
+    return {
+      ok: true,
+      json: async () => ({ estimates: [{ ROW: "42 Pennsylvania", ESTIMATE: isArea ? 140_000 : 12_000_000, SE: 2_000_000, SE_PERCENT: 20, PLOT_COUNT: 24 }] }),
+    };
+  };
+  context.after(() => { globalThis.fetch = originalFetch; });
+
+  const response = await call({
+    method: "POST",
+    url: "/api/estimate",
+    body: {
+      geography: { type: "county", states: ["PA"], counties: ["42007"] },
+      estimate_type: "total_carbon",
+      grouping: "county",
+      evaluation_year: 2025,
+      filters: {},
+      live_data: true,
+    },
+  });
+  assert.equal(response.code, 200);
+  assert.equal(response.body.rows[0].label, "Beaver County");
 });
 
 test("anonymous usage events are accepted without affecting the application", async () => {
