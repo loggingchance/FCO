@@ -3,6 +3,7 @@ export const NON_AFFILIATION =
 
 export const navItems = [
   ["home", "Home"],
+  ["howto", "How To"],
   ["explore", "Explore Carbon"],
   ["compare", "Compare Places"],
   ["reports", "Reports"],

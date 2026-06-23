@@ -4,7 +4,7 @@ import { EstimateChart } from "../components/EstimateChart";
 import { ExportButtons } from "../components/ExportButtons";
 import { MapPanel } from "../components/MapPanel";
 import { api } from "../services/api";
-import type { CountyOption, EstimateRequest, EstimateResponse, StateOption } from "../types";
+import type { CountyOption, EstimateRequest, EstimateResponse, Page, StateOption } from "../types";
 import { alternateCarbon, formatCompactEstimate, formatEstimate, formatPerAcreEstimate, formatPercent, formatTotalEstimate } from "../utils/units";
 import { saveLastResult } from "../utils/results";
 import { trackUsage } from "../services/analytics";
@@ -38,7 +38,7 @@ const GROUPING_LABELS: Record<string, string> = {
   carbon_pool: "Carbon pool",
 };
 
-export function Explore() {
+export function Explore({ setPage }: { setPage: (page: Page) => void }) {
   const [states, setStates] = useState<StateOption[]>([]);
   const [counties, setCounties] = useState<CountyOption[]>([]);
   const [estimateTypes, setEstimateTypes] = useState<{ id: string; label: string; unit: string }[]>([]);
@@ -157,6 +157,7 @@ export function Explore() {
       </section>
       <section className="panel form-panel wide">
         <h2>Estimate setup</h2>
+        <p className="field-help">New to FCO? <button className="link-button" onClick={() => setPage("howto")}>See the How To</button>.</p>
         <div className="form-grid">
           <fieldset className="geography-mode">
             <legend>Geography</legend>

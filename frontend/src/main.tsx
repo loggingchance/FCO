@@ -8,6 +8,7 @@ import { DataSources } from "./pages/DataSources";
 import { Explore } from "./pages/Explore";
 import { Glossary } from "./pages/Glossary";
 import { History } from "./pages/History";
+import { HowTo } from "./pages/HowTo";
 import { Home } from "./pages/Home";
 import { Limitations } from "./pages/Limitations";
 import { Methodology } from "./pages/Methodology";
@@ -20,6 +21,10 @@ const pageMetadata: Record<Page, { title: string; description: string }> = {
   home: {
     title: "Forest Carbon Online (FCO) | FIA Carbon Estimates",
     description: "Explore official USDA Forest Service FIA forest carbon estimates for U.S. states and counties, with uncertainty, plot counts, comparisons, and reports.",
+  },
+  howto: {
+    title: "How to Use Forest Carbon Online | FCO",
+    description: "A step-by-step guide to building, comparing, and exporting documented FIA forest carbon estimates in Forest Carbon Online.",
   },
   explore: {
     title: "Explore Forest Carbon Estimates | FCO",
@@ -69,7 +74,8 @@ function App() {
   }, [page]);
   const pages: Record<Page, React.ReactNode> = {
     home: <Home setPage={setPage} />,
-    explore: <Explore />,
+    howto: <HowTo setPage={setPage} />,
+    explore: <Explore setPage={setPage} />,
     compare: <Compare />,
     reports: <Reports setPage={setPage} />,
     methodology: <Methodology />,

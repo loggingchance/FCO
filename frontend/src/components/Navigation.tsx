@@ -1,10 +1,11 @@
 import { useRef } from "react";
-import { BarChart3, BookOpen, ChevronDown, Database, FileText, GitCompare, Home, Info, Map, ShieldAlert } from "lucide-react";
+import { BarChart3, BookOpen, ChevronDown, Compass, Database, FileText, GitCompare, Home, Info, Map, ShieldAlert } from "lucide-react";
 import type { Page } from "../types";
 import { navItems } from "../data/content";
 
 const icons: Record<string, React.ComponentType<{ size?: number }>> = {
   home: Home,
+  howto: Compass,
   explore: Map,
   compare: GitCompare,
   reports: FileText,

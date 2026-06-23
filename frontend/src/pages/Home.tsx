@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, Coffee, ExternalLink, FileText, Filter, History, Layers3, MapPin, Search } from "lucide-react";
+import { ArrowRight, BadgeCheck, Coffee, Compass, ExternalLink, FileText, Filter, History, Layers3, MapPin, Search } from "lucide-react";
 import type { Page } from "../types";
 import { COUNTIES, STATES } from "../../shared/counties.js";
 import { trackUsage } from "../services/analytics";
@@ -33,6 +33,7 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
           <button className="primary" onClick={() => setPage("explore")}>Choose a Place <ArrowRight size={17} /></button>
         </div>
         <div className="home-secondary-actions">
+          <button onClick={() => setPage("howto")}><Compass size={17} /> How To</button>
           <button onClick={() => setPage("reports")}><FileText size={17} /> Latest Report</button>
           <button onClick={() => setPage("history")}><History size={17} /> History</button>
           <button onClick={() => setPage("methodology")}><Search size={17} /> Method</button>
