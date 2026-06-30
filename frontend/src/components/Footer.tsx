@@ -13,7 +13,7 @@ export function Footer() {
             <MessageSquareText size={16} aria-hidden="true" /> Feedback &amp; suggestions
           </a>
           <a className="footer-support" href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer">
-            <Coffee size={16} aria-hidden="true" /> Buy me a coffee <ExternalLink size={13} aria-hidden="true" />
+            <Coffee size={16} aria-hidden="true" /> Buy me a beer <ExternalLink size={13} aria-hidden="true" />
           </a>
         </div>
       </div>

@@ -65,10 +65,10 @@ export function About() {
           <Coffee size={24} aria-hidden="true" />
           <div>
             <strong>Enjoying FCO?</strong>
-            <p>If this app has been useful, consider buying me a coffee through Venmo.</p>
+            <p>If this app has been useful, consider buying me a beer through Venmo.</p>
           </div>
           <a className="support-link" href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer">
-            Buy me a coffee <ExternalLink size={14} aria-hidden="true" />
+            Buy me a beer <ExternalLink size={14} aria-hidden="true" />
           </a>
         </aside>
       </div>

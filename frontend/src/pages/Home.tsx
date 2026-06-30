@@ -50,7 +50,7 @@ export function Home({ setPage }: { setPage: (page: Page) => void }) {
         </div>
         <div className="home-support">
           <a href="https://venmo.com/u/Steven-Bick-1" target="_blank" rel="noreferrer" onClick={() => trackUsage("support_opened", { page: "home" })}>
-            <Coffee size={15} aria-hidden="true" /> Enjoying FCO? Buy me a coffee <ExternalLink size={12} aria-hidden="true" />
+            <Coffee size={15} aria-hidden="true" /> Enjoying FCO? Buy me a beer <ExternalLink size={12} aria-hidden="true" />
           </a>
         </div>
       </div>
